@@ -446,15 +446,26 @@ input[type=file]{display:none}
         </div>
       </div>
     </div>
-    <button class="addbtn" id="btnAdd" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-      Añadir una pieza nueva
-    </button>
     <div class="tools">
       <button class="btn ghost" id="btnVer">Ver la web</button>
       <button class="btn ghost" id="btnHist">Deshacer</button>
     </div>
     <div style="text-align:center"><button class="link" id="btnOut">Cerrar sesión</button></div>
+  </div>
+</section>
+
+<section class="screen" id="scFam">
+  <div class="app">
+    <div class="bar">
+      <button class="ico" id="famBack" aria-label="Atrás"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <h1 id="famTitle">Apartado</h1>
+    </div>
+    <p class="hint" id="famHint"></p>
+    <div class="list" id="famList"></div>
+    <button class="addbtn" id="famAdd" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span id="famAddTxt">Añadir</span>
+    </button>
   </div>
 </section>
 
@@ -509,7 +520,7 @@ var TOKEN=null, doc=null, groups=[], edits={}, newImages={}, structural=0, curre
 
 var $=function(s){return document.querySelector(s)};
 function show(id){
-  ["scGate","scSetup","scHome","scEdit","scHist"].forEach(function(s){
+  ["scGate","scSetup","scHome","scFam","scEdit","scHist"].forEach(function(s){
     $("#"+s).classList.toggle("on", s===id) });
   window.scrollTo(0,0);
 }
@@ -711,7 +722,38 @@ function construir(){
     G.thumb=im?im.getAttribute("src"):null;
     return G;
   });
+  construirEntradas();
 }
+/* ── carpetas ──
+   Antes cada pieza y cada avion del despiece salia suelto en la lista: 20
+   entradas, y los del despiece parecian productos repetidos. Ahora "Piezas" y
+   "Despiece" son UNA entrada con sus elementos dentro. */
+var CARPETAS=[{clave:"Pieza", nombre:"Piezas", singular:"pieza", anadir:"Añadir una pieza nueva"},
+              {clave:"Despiece", nombre:"Despiece", singular:"avión", anadir:"Añadir otro avión al despiece"}];
+var entradas=[], familiaActual=null;  /* guarda la clave, p.ej. "Despiece" */
+function carpetaDe(nombreGrupo){
+  for(var i=0;i<CARPETAS.length;i++){
+    var c=CARPETAS[i];
+    if(nombreGrupo===c.clave || nombreGrupo.indexOf(c.clave+" ")===0 ||
+       nombreGrupo.toLowerCase().indexOf(c.singular+" nuev")===0 ||
+       nombreGrupo.toLowerCase()===(c.clave.toLowerCase()+" nuevo") ||
+       nombreGrupo.toLowerCase()===(c.clave.toLowerCase()+" nueva")) return c;
+  }
+  return null;
+}
+function construirEntradas(){
+  entradas=[]; var vistas={};
+  groups.forEach(function(g,i){
+    var c=carpetaDe(g.sub||"");
+    if(c){
+      if(!vistas[c.nombre]){
+        vistas[c.nombre]={tipo:"carpeta", carpeta:c, miembros:[i]};
+        entradas.push(vistas[c.nombre]);
+      } else vistas[c.nombre].miembros.push(i);
+    } else entradas.push({tipo:"grupo", idx:i});
+  });
+}
+
 function ruta(s){
   if(!s) return "";
   if(/^(https?:|data:|blob:)/.test(s)) return s;
@@ -722,32 +764,70 @@ function sucio(g){
     var k=el.getAttribute("data-e"), i=el.getAttribute("data-i");
     return (k&&k in edits)||(i&&i in newImages) });
 }
+/* construye una tarjeta de la lista, valga para un apartado o para una carpeta */
+function tarjeta(o){
+  var b=document.createElement("button");
+  b.className="item panel-remaches"+(o.sucia?" dirty":"");
+  b.innerHTML='<span class="nchk">'+o.num+'</span>'+
+    (o.thumb?'<img class="thumb" src="'+ruta(o.thumb)+'" alt="" loading="lazy">'
+            :'<span class="thumb ph">'+(o.icono||"Aa")+'</span>')+
+    '<span class="txt"><b></b><span>'+o.meta+'</span></span>'+
+    '<span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>';
+  b.querySelector(".txt b").textContent=o.titulo;
+  b.onclick=o.al;
+  return b;
+}
+function resumen(g){
+  var nT=g.fields.filter(function(e){return e.hasAttribute("data-e")}).length;
+  var nF=g.fields.filter(function(e){return e.hasAttribute("data-i")}).length;
+  var p=[];
+  if(nT)p.push(nT+(nT===1?" texto":" textos"));
+  if(nF)p.push(nF+(nF===1?" foto":" fotos")+(nF>1?" · carrusel":""));
+  return p.join(" · ");
+}
+
 function pintarHome(){
   var L=$("#homeList"); L.innerHTML="";
-  groups.forEach(function(g,idx){
-    var b=document.createElement("button"); b.className="item panel-remaches"+(sucio(g)?" dirty":"");
-    var nT=g.fields.filter(function(e){return e.hasAttribute("data-e")}).length;
-    var nF=g.fields.filter(function(e){return e.hasAttribute("data-i")}).length;
-    var p=[];
-    /* Jaime renombra las piezas, asi que el titulo ya no dice a que seccion
-       pertenece: "Los trolleys" no delata que eso sea el despiece. Se antepone
-       el nombre de la seccion para que las encuentre. */
-    var sec=(g.sub||"").replace(/\s*\d+$/,"");
-    if(sec && sec.toLowerCase()!==String(g.label||"").toLowerCase()) p.push(sec);
-    if(nT)p.push(nT+(nT===1?" texto":" textos"));
-    if(nF)p.push(nF+(nF===1?" foto":" fotos")+(nF>1?" \u00b7 carrusel":""));
-    b.innerHTML='<span class="nchk">'+String(idx+1).padStart(2,"0")+'</span>'+
-      (g.thumb?'<img class="thumb" src="'+ruta(g.thumb)+'" alt="" loading="lazy">':'<span class="thumb ph">Aa</span>')+
-      '<span class="txt"><b></b><span>'+(sucio(g)?"● Sin publicar":p.join(" · "))+'</span></span>'+
-      '<span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>';
-    b.querySelector(".txt b").textContent=g.label;
-    b.onclick=function(){ abrir(idx) };
-    L.appendChild(b);
+  entradas.forEach(function(e,i){
+    var num=String(i+1).padStart(2,"0");
+    if(e.tipo==="grupo"){
+      var g=groups[e.idx];
+      L.appendChild(tarjeta({num:num, titulo:g.label, meta:resumen(g), thumb:g.thumb,
+        sucia:sucio(g), al:function(){ familiaActual=null; abrir(e.idx) }}));
+    } else {
+      var c=e.carpeta, n=e.miembros.length;
+      var algunaSucia=e.miembros.some(function(k){ return sucio(groups[k]) });
+      var thumb=null;
+      for(var k=0;k<e.miembros.length && !thumb;k++) thumb=groups[e.miembros[k]].thumb;
+      L.appendChild(tarjeta({num:num, titulo:c.nombre,
+        meta:n+" "+(n===1?c.singular:(c.singular==="pieza"?"piezas":"aviones"))+(algunaSucia?" · ● sin publicar":""),
+        thumb:thumb, sucia:algunaSucia, al:function(){ abrirFamilia(c.clave) }}));
+    }
   });
-  $("#homeHint").textContent=groups.length+" apartados";
+  $("#homeHint").textContent=entradas.length+" apartados";
   pintarPielWeb();
   pintarSonidoWeb();
   actualizarPub();
+}
+
+/* ── dentro de una carpeta ── */
+function abrirFamilia(clave){
+  var e=null;
+  for(var i=0;i<entradas.length;i++)
+    if(entradas[i].tipo==="carpeta" && entradas[i].carpeta.clave===clave) e=entradas[i];
+  if(!e){ familiaActual=null; show("scHome"); return }
+  familiaActual=clave;
+  var c=e.carpeta;
+  $("#famTitle").textContent=c.nombre;
+  $("#famHint").textContent=e.miembros.length+" "+(e.miembros.length===1?c.singular:(c.singular==="pieza"?"piezas":"aviones"));
+  $("#famAddTxt").textContent=c.anadir;
+  var L=$("#famList"); L.innerHTML="";
+  e.miembros.forEach(function(idx,i){
+    var g=groups[idx];
+    L.appendChild(tarjeta({num:String(i+1).padStart(2,"0"), titulo:g.label, meta:resumen(g),
+      thumb:g.thumb, sucia:sucio(g), al:function(){ abrir(idx) }}));
+  });
+  show("scFam");
 }
 function esFlota(a){ return !!(a && a.classList && a.classList.contains("fleet-card")) }
 function articuloDe(g){
@@ -894,7 +974,7 @@ function addPieza(){
     '<div class="row"><span class="k">Material</span><i class="dots"></i><span class="v" '+A("material","Material")+'>Por definir</span></div>'+
     '<div class="row"><span class="k">Estado</span><i class="dots"></i><span class="v" '+A("estado","Estado")+'>Restaurado</span></div>'+
     '</div></div>';
-  cont.appendChild(a); structural++; construir();
+  cont.appendChild(a); structural++; construir(); familiaActual="Pieza";
   var idx=-1; for(var i=0;i<groups.length;i++) if(groups[i].sub===G) idx=i;
   pintarHome(); if(idx>=0) abrir(idx);
   toast("Pieza creada. Ponle nombre y foto.","ok");
@@ -948,7 +1028,7 @@ function addAvion(idx){
   /* antes de la tarjeta de cierre "Y más", si la hay */
   var cierre=cont.querySelector("article.fleet-more");
   if(cierre) cont.insertBefore(a,cierre); else cont.appendChild(a);
-  structural++; construir();
+  structural++; construir(); familiaActual="Despiece";
   var i=-1; for(var k=0;k<groups.length;k++) if(groups[k].sub===G) i=k;
   pintarHome(); if(i>=0) abrir(i);
   toast("Avión añadido al despiece. Ponle modelo y foto.","ok");
@@ -961,7 +1041,8 @@ function borrar(idx){
     var k=el.getAttribute("data-e"), i=el.getAttribute("data-i");
     if(k) delete edits[k]; if(i) delete newImages[i];
   });
-  a.parentNode.removeChild(a); structural++; construir(); pintarHome(); show("scHome");
+  a.parentNode.removeChild(a); structural++; construir(); pintarHome();
+  if(familiaActual) abrirFamilia(familiaActual); else show("scHome");
   toast("Quitada. Pulsa Publicar para que desaparezca.");
 }
 function mover(idx,dir){
@@ -1140,7 +1221,14 @@ function publicarDeVerdad(n){
     });
   }).catch(function(e){ working(false); toast(String(e.message||e).slice(0,120),"err") });
 }
-$("#editBack").onclick=function(){ pintarHome(); show("scHome") };
+$("#editBack").onclick=function(){
+  pintarHome();
+  if(familiaActual) abrirFamilia(familiaActual); else show("scHome");
+};
+$("#famBack").onclick=function(){ familiaActual=null; pintarHome(); show("scHome") };
+$("#famAdd").onclick=function(){
+  if(familiaActual==="Despiece") addAvion(-1); else if(familiaActual) addPieza();
+};
 $("#histBack").onclick=function(){ show("scHome") };
 $("#btnReload").onclick=function(){
   if(nCambios()&&!confirm("Tienes cambios sin publicar. ¿Los descartas?")) return;
@@ -1193,7 +1281,7 @@ $("#pielSw").onkeydown=function(e){ if(e.key===" "||e.key==="Enter"){ e.preventD
 
 $("#btnVer").onclick=function(){ window.open("/","_blank") };
 $("#btnHist").onclick=historial;
-$("#btnAdd").onclick=addPieza;
+
 $("#btnPub").onclick=publicar;
 $("#btnOut").onclick=function(){
   if(nCambios()&&!confirm("Tienes cambios sin publicar. ¿Sales igualmente?")) return;

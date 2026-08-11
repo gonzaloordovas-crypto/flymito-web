@@ -1,0 +1,1317 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FLYMITO · Muebles y objetos hechos con piezas de avión reales</title>
+<meta name="description" content="Restauramos piezas originales de avión —trolleys, hélices, compuertas de carga, asientos de cabina, instrumentos— y las convertimos en muebles y objetos únicos. Todo por encargo. Envíos a todo el mundo.">
+<link rel="canonical" href="https://flymito.com/">
+<meta name="theme-color" content="#070B0D" media="(prefers-color-scheme:dark)">
+<meta name="theme-color" content="#E8EBE7" media="(prefers-color-scheme:light)">
+<meta name="author" content="Flymito">
+<link rel="icon" href="/favicon.png" sizes="32x32">
+<link rel="icon" href="/favicon-512.png" sizes="512x512">
+<link rel="apple-touch-icon" href="/favicon-180.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Flymito">
+<meta property="og:locale" content="es_ES">
+<meta property="og:url" content="https://flymito.com/">
+<meta property="og:title" content="FLYMITO · Muebles y objetos hechos con piezas de avión reales">
+<meta property="og:description" content="Restauramos piezas originales de avión —trolleys, hélices, compuertas de carga, asientos de cabina, instrumentos— y las convertimos en muebles y objetos únicos. Todo por encargo. Envíos a todo el mundo.">
+<meta property="og:image" content="https://flymito.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Asiento de comandante de Boeing 727 restaurado, instalado en el salón de una casa">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FLYMITO · Muebles y objetos hechos con piezas de avión reales">
+<meta name="twitter:description" content="Restauramos piezas originales de avión —trolleys, hélices, compuertas de carga, asientos de cabina, instrumentos— y las convertimos en muebles y objetos únicos. Todo por encargo. Envíos a todo el mundo.">
+<meta name="twitter:image" content="https://flymito.com/og.jpg">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"LocalBusiness","name":"Flymito",
+"description":"Restauramos piezas originales de avión —trolleys, hélices, compuertas de carga, asientos de cabina, instrumentos— y las convertimos en muebles y objetos únicos. Todo por encargo. Envíos a todo el mundo.","url":"https://flymito.com/","image":"https://flymito.com/og.jpg",
+"telephone":"+34600405655","email":"flymito@flymito.com",
+"address":{"@type":"PostalAddress","addressLocality":"Madrid","addressCountry":"ES"},
+"sameAs":["https://www.instagram.com/flymito_aero/"]}
+</script>
+<style>*{margin:0}body{margin:0}</style>
+</head>
+<body>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   ALTURA DE ESCENA EN PIXELES · NO USAR vh/svh PARA LOS ACTOS
+   Esta pagina se publica dentro de un iframe que se AUTOAJUSTA a la
+   altura de su contenido. Si los actos miden en vh, se realimenta:
+   iframe mas alto -> vh mayor -> contenido mas alto -> iframe mas alto.
+   Medido en la reproduccion del marco: 1.916.015 px y pantalla en negro.
+   screen.height es constante y no depende del iframe: por eso acota.
+   Se fija ANTES de pintar para que no haya ni un ciclo malo.
+   ═══════════════════════════════════════════════════════════════════ */
+(function(){
+  function stageH(){
+    var sh = (window.screen && screen.height) ? screen.height : 900;
+    var ih = window.innerHeight || sh;
+    return Math.max(420, Math.min(ih, sh, 1100));
+  }
+  window.__stageH = stageH;
+  document.documentElement.style.setProperty('--stage', stageH() + 'px');
+})();
+</script>
+
+<style>
+/* ══════════════════════════════════════════════════════════════
+   FLYMITO · cabina · tokens
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  --ground:#070B0D;
+  --panel:#101617;
+  --panel-2:#161E1F;
+  --ink:#E4EAE6; --ink-2:#9EAAA5; --ink-3:#68736F;
+  --amber:#E8A33D;
+  --amber-dim:#8A6220;
+  --rbf:#D8402A;
+  --green:#4FD08A;
+  --alum:#C4CBC8;
+  --rule:rgba(196,203,200,.14);
+  --rule-2:rgba(196,203,200,.30);
+  --plate:rgba(255,255,255,.028);
+  --glass:rgba(10,14,16,.72);
+  --adi-sky:#1B5877; --adi-gnd:#6A4620;
+  --shadow:0 30px 70px -32px rgba(0,0,0,.92);
+  --logo-filter:none;
+
+  --display:'Helvetica Neue',Helvetica,'Arial Narrow',Arial,sans-serif;
+  --body:'Helvetica Neue',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+
+  --pad:clamp(20px,5vw,72px);
+  --maxw:1240px;
+
+  /* variables de vuelo · las escribe el JS */
+  --alt:0; --spd:0; --hdg:0; --pitch:0; --roll:0; --vs:0;
+}
+@media (prefers-color-scheme:light){
+  :root{
+    --ground:#E8EBE7; --panel:#DCE1DC; --panel-2:#D0D7D1;
+    --ink:#0D1314; --ink-2:#3E4846; --ink-3:#67716E;
+    --amber:#8A5B10; --amber-dim:#B99555; --rbf:#AE2F1E; --green:#1F7A4C;
+    --alum:#232B2A;
+    --rule:rgba(13,19,20,.16); --rule-2:rgba(13,19,20,.32);
+    --plate:rgba(13,19,20,.035);
+    --glass:rgba(232,235,231,.76);
+    --shadow:0 30px 70px -34px rgba(13,19,20,.4);
+    --logo-filter:invert(1) opacity(.9);
+  }
+}
+:root[data-theme="light"]{
+  --ground:#E8EBE7; --panel:#DCE1DC; --panel-2:#D0D7D1;
+  --ink:#0D1314; --ink-2:#3E4846; --ink-3:#67716E;
+  --amber:#8A5B10; --amber-dim:#B99555; --rbf:#AE2F1E; --green:#1F7A4C;
+  --alum:#232B2A;
+  --rule:rgba(13,19,20,.16); --rule-2:rgba(13,19,20,.32);
+  --plate:rgba(13,19,20,.035);
+  --glass:rgba(232,235,231,.76);
+  --shadow:0 30px 70px -34px rgba(13,19,20,.4);
+  --logo-filter:invert(1) opacity(.9);
+}
+:root[data-theme="dark"]{
+  --ground:#070B0D; --panel:#101617; --panel-2:#161E1F;
+  --ink:#E4EAE6; --ink-2:#9EAAA5; --ink-3:#68736F;
+  --amber:#E8A33D; --amber-dim:#8A6220; --rbf:#D8402A; --green:#4FD08A;
+  --alum:#C4CBC8;
+  --rule:rgba(196,203,200,.14); --rule-2:rgba(196,203,200,.30);
+  --plate:rgba(255,255,255,.028);
+  --glass:rgba(10,14,16,.72);
+  --shadow:0 30px 70px -32px rgba(0,0,0,.92);
+  --logo-filter:none;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:var(--body); font-size:17px; line-height:1.62;
+  -webkit-font-smoothing:antialiased; overflow-x:hidden;
+}
+img{max-width:100%; display:block}
+.wrap{max-width:var(--maxw); margin:0 auto; padding-inline:var(--pad)}
+
+h1,h2,h3{
+  font-family:var(--display); font-weight:800; text-transform:uppercase;
+  margin:0; line-height:.92; letter-spacing:-.008em; text-wrap:balance;
+  font-stretch:condensed;
+}
+h2{font-size:clamp(32px,5.4vw,64px)}
+h3{font-size:clamp(19px,2vw,24px); line-height:1.05; letter-spacing:0}
+p{margin:0}
+.lede{font-size:clamp(17px,1.5vw,20px); color:var(--ink-2); max-width:62ch; line-height:1.6}
+
+.eyebrow{
+  font-family:var(--mono); font-size:11px; letter-spacing:.26em;
+  text-transform:uppercase; color:var(--amber); margin:0;
+  display:flex; align-items:center; gap:12px;
+}
+.eyebrow::after{content:''; height:1px; flex:1; max-width:90px; background:var(--rule-2)}
+
+.sect{padding-block:clamp(72px,9vw,128px); position:relative; z-index:2}
+.sect-head{display:flex; flex-direction:column; gap:18px; margin-bottom:clamp(38px,5vw,62px)}
+.centreline{height:2px; width:100%; position:relative; z-index:2;
+  background:repeating-linear-gradient(to right,var(--rule-2) 0 42px,transparent 42px 76px)}
+
+a{color:inherit}
+:focus-visible{outline:2px solid var(--amber); outline-offset:3px}
+/* la cabecera es fija: los anclajes tienen que dejarle sitio */
+section[id],main a[id]{scroll-margin-top:84px}
+
+/* ══════════════════════════════════════════════════════════════
+   LOGO · el de la marca, nunca tipografía
+   ══════════════════════════════════════════════════════════════ */
+.logo{filter:var(--logo-filter)}
+.logo-on-photo{filter:none}   /* sobre foto siempre en blanco */
+
+/* ══════════════════════════════════════════════════════════════
+   CARCASA DE CABINA · fija, decorativa
+   ══════════════════════════════════════════════════════════════ */
+.cockpit{position:fixed; inset:0; z-index:40; pointer-events:none}
+
+/* montantes laterales (A-pillars) + viñeta de estar dentro
+   OJO: el color se DERIVA de --ground para que siga al tema. Si se pone a pelo,
+   al cambiar a modo día con el sistema en oscuro se quedaban negros. */
+.cockpit .pillars{position:absolute; inset:0;
+  background:
+    linear-gradient(to right, color-mix(in srgb, var(--ground) 90%, transparent) 0, transparent 8%),
+    linear-gradient(to left,  color-mix(in srgb, var(--ground) 90%, transparent) 0, transparent 8%);
+  opacity:var(--shell,1); transition:opacity .5s ease;
+}
+/* en móvil se comían casi un quinto de la pantalla: fuera */
+@media (max-width:760px){ .cockpit .pillars{display:none} }
+
+/* remaches del montante */
+.cockpit .rivets{position:absolute; top:0; bottom:0; width:9px;
+  background-image:radial-gradient(circle, rgba(196,203,200,.30) 1.4px, transparent 1.8px);
+  background-size:9px 26px; opacity:calc(var(--shell,1) * .8)}
+.cockpit .rivets.l{left:9px} .cockpit .rivets.r{right:9px}
+@media (max-width:900px){ .cockpit .rivets{display:none} }
+
+/* ══════════════════════════════════════════════════════════════
+   GLARESHIELD · cabecera
+   ══════════════════════════════════════════════════════════════ */
+/* FIJA, no sticky: si ocupa sitio en el flujo empuja el primer acto hacia abajo
+   y la pista se queda fuera de pantalla en el fotograma inicial. */
+.top{
+  position:fixed; top:0; left:0; right:0; z-index:70;
+  display:flex; align-items:center; gap:clamp(10px,2vw,26px);
+  padding:9px var(--pad) 10px;
+  background:var(--glass);
+  backdrop-filter:blur(18px) saturate(1.3);
+  border-bottom:1px solid var(--rule);
+  box-shadow:0 1px 0 rgba(255,255,255,.04), 0 14px 30px -22px rgba(0,0,0,.9);
+}
+.top .brand{display:flex; align-items:center; gap:12px; flex-shrink:0}
+.top .brand img{width:clamp(94px,10vw,124px); height:auto}
+.demo-pill{
+  font-family:var(--mono); font-size:9px; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--rbf); border:1px solid var(--rbf); padding:3px 7px; white-space:nowrap; line-height:1.3;
+}
+@media (max-width:1180px){ .demo-pill{display:none} }
+
+/* ── panel anunciador = navegación ── */
+.annun{display:flex; gap:5px; margin-left:auto; flex-wrap:nowrap}
+.annun a{
+  font-family:var(--mono); font-size:9px; letter-spacing:.13em; text-transform:uppercase;
+  text-decoration:none; color:var(--ink-3);
+  padding:6px 9px 5px; line-height:1.1; text-align:center; min-width:62px;
+  border:1px solid var(--rule); border-radius:2px;
+  background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(0,0,0,.16));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  transition:color .28s ease, border-color .28s ease, background .28s ease, box-shadow .28s ease;
+  position:relative; overflow:hidden;
+}
+.annun a::before{content:''; position:absolute; inset:0; opacity:0;
+  background:radial-gradient(120% 130% at 50% 0%, var(--amber), transparent 70%);
+  transition:opacity .3s ease}
+.annun a:hover,.annun a:focus-visible{color:var(--amber); border-color:var(--amber-dim)}
+.annun a.lit{
+  color:#12181A; border-color:var(--amber);
+  background:linear-gradient(180deg,#F2BC63,var(--amber));
+  box-shadow:0 0 14px -2px var(--amber), inset 0 1px 0 rgba(255,255,255,.5);
+  font-weight:700;
+}
+:root[data-theme="light"] .annun a.lit,
+:root:not([data-theme="dark"]) .annun a.lit{color:#FFF6E6}
+@media (prefers-color-scheme:light){ .annun a.lit{color:#FFF6E6} }
+:root[data-theme="dark"] .annun a.lit{color:#12181A}
+@media (max-width:1060px){ .annun{display:none} }
+
+/* ── interruptor real DÍA/NOCHE ── */
+.switch{
+  pointer-events:auto; flex-shrink:0; display:flex; align-items:center; gap:9px;
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--rule-2); border-radius:3px; padding:5px 9px 5px 6px;
+  cursor:pointer; font-family:var(--mono); box-shadow:inset 0 1px 0 rgba(255,255,255,.07);
+}
+.switch:hover{border-color:var(--amber-dim)}
+.sw-body{width:19px; height:38px; border-radius:3px; position:relative; flex-shrink:0;
+  background:linear-gradient(180deg,#0A0E10,#1B2325);
+  border:1px solid rgba(0,0,0,.6); box-shadow:inset 0 0 8px rgba(0,0,0,.85)}
+.sw-bat{position:absolute; left:50%; width:11px; height:19px; border-radius:2px;
+  transform:translateX(-50%); top:2px;
+  background:linear-gradient(180deg,#E6EAE8,#8E9895 60%,#5A6462);
+  box-shadow:0 2px 5px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.9);
+  transition:top .22s cubic-bezier(.4,1.6,.5,1);}
+.switch[aria-checked="true"] .sw-bat{top:17px}
+.sw-lbl{display:flex; flex-direction:column; gap:2px; font-size:8px; letter-spacing:.14em;
+  text-transform:uppercase; line-height:1.25}
+.sw-lbl b{font-weight:400; color:var(--ink-3)}
+.sw-lbl b.on{color:var(--amber); font-weight:700}
+@media (max-width:520px){ .sw-lbl{display:none} }
+
+/* ══════════════════════════════════════════════════════════════
+   PFD · grupo de instrumentos (abajo izquierda)
+   ══════════════════════════════════════════════════════════════ */
+.pfd{
+  position:fixed; left:16px; bottom:16px; z-index:55; pointer-events:none;
+  display:flex; align-items:flex-end; gap:7px;
+  font-family:var(--mono); color:var(--amber);
+  opacity:var(--pfd-op,1); transition:opacity .55s ease;
+}
+.gauge{
+  background:linear-gradient(180deg,rgba(20,27,28,.93),rgba(9,13,14,.95));
+  border:1px solid var(--rule-2); border-radius:3px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 10px 24px -14px rgba(0,0,0,.9);
+}
+@media (prefers-color-scheme:light){
+  .gauge{background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(226,231,226,.92))}
+}
+:root[data-theme="light"] .gauge{background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(226,231,226,.92))}
+:root[data-theme="dark"] .gauge{background:linear-gradient(180deg,rgba(20,27,28,.93),rgba(9,13,14,.95))}
+
+.g-cap{font-size:7.5px; letter-spacing:.2em; color:var(--ink-3); text-align:center;
+  padding:3px 0 2px; text-transform:uppercase}
+.g-val{font-size:13px; font-weight:700; letter-spacing:0; text-align:center;
+  font-variant-numeric:tabular-nums; padding-bottom:4px; white-space:nowrap}
+
+/* horizonte artificial */
+.adi{width:104px; height:104px; border-radius:50%; overflow:hidden; position:relative;
+  border:2px solid var(--rule-2); flex-shrink:0;
+  box-shadow:inset 0 0 18px rgba(0,0,0,.7), 0 10px 26px -14px rgba(0,0,0,.9)}
+.adi-ball{position:absolute; left:-50%; top:-50%; width:200%; height:200%;
+  transform:rotate(calc(var(--roll)*1deg)) translateY(calc(var(--pitch)*1.5px));
+  background:linear-gradient(to bottom,
+    #0E3A50 0%, var(--adi-sky) 46%, var(--adi-sky) 49.7%,
+    #E9EEEC 49.7%, #E9EEEC 50.3%,
+    var(--adi-gnd) 50.3%, var(--adi-gnd) 54%, #3E2A12 100%);
+}
+.adi-ladder{position:absolute; inset:0;
+  transform:rotate(calc(var(--roll)*1deg)) translateY(calc(var(--pitch)*1.5px))}
+.adi-ladder i{position:absolute; left:50%; height:1px; background:rgba(255,255,255,.62);
+  transform:translateX(-50%)}
+.adi-wing{position:absolute; inset:0; display:grid; place-items:center}
+.adi-wing::before{content:''; width:52px; height:2px; background:var(--amber);
+  box-shadow:0 0 6px rgba(232,163,61,.8)}
+.adi-wing::after{content:''; position:absolute; width:6px; height:6px; border-radius:50%;
+  border:1.5px solid var(--amber)}
+.adi-bank{position:absolute; top:5px; left:50%; transform:translateX(-50%);
+  width:0; height:0; border-left:5px solid transparent; border-right:5px solid transparent;
+  border-bottom:8px solid var(--amber)}
+
+/* cintas verticales */
+.tape{width:64px; height:104px; position:relative; overflow:hidden;
+  display:flex; flex-direction:column; justify-content:space-between}
+.tape-fill{position:absolute; left:0; right:0; bottom:0; background:
+  linear-gradient(to top, rgba(232,163,61,.34), rgba(232,163,61,.05));
+  height:calc(var(--fill,0)*1%); transition:height .12s linear}
+.tape-ticks{position:absolute; inset:0;
+  background-image:repeating-linear-gradient(to bottom,
+    var(--rule) 0 1px, transparent 1px 13px)}
+.tape .g-cap,.tape .g-val{position:relative}
+
+/* brújula */
+.hdg{width:172px; height:34px; position:relative; overflow:hidden}
+.hdg-tape{position:absolute; top:11px; left:0; height:14px; width:2000px;
+  background-image:repeating-linear-gradient(to right,
+    var(--rule-2) 0 1px, transparent 1px 20px);
+  transform:translateX(calc(-1 * var(--hdg) * 2px))}
+.hdg-lbl{position:absolute; inset:0; display:grid; place-items:center;
+  font-size:12px; font-weight:700; letter-spacing:.1em; font-variant-numeric:tabular-nums;
+  color:var(--amber); text-shadow:0 0 8px rgba(0,0,0,.6)}
+.hdg-mark{position:absolute; top:0; left:50%; transform:translateX(-50%);
+  width:0; height:0; border-left:4px solid transparent; border-right:4px solid transparent;
+  border-top:6px solid var(--amber)}
+
+@media (max-width:1180px){ .pfd .adi,.pfd .hdg{display:none} }
+@media (max-width:760px){ .pfd{left:10px; bottom:10px; transform:scale(.86); transform-origin:left bottom} }
+
+/* ══════════════════════════════════════════════════════════════
+   FASE DE VUELO + interruptor con guarda (abajo derecha)
+   ══════════════════════════════════════════════════════════════ */
+.phase{
+  position:fixed; right:16px; bottom:16px; z-index:55;
+  display:flex; flex-direction:column; align-items:flex-end; gap:9px;
+  font-family:var(--mono); pointer-events:none;
+}
+.phase-read{
+  display:flex; align-items:center; gap:8px; padding:6px 11px;
+  font-size:9.5px; letter-spacing:.2em; text-transform:uppercase; color:var(--amber);
+  background:var(--glass); border:1px solid var(--rule-2); border-radius:2px;
+  backdrop-filter:blur(10px); white-space:nowrap;
+}
+.phase-read .led{width:6px; height:6px; border-radius:50%; background:var(--green);
+  box-shadow:0 0 8px var(--green); animation:blip 2.4s ease-in-out infinite}
+@keyframes blip{0%,100%{opacity:1}50%{opacity:.3}}
+
+.guard{position:relative; width:118px; height:52px; pointer-events:auto}
+.guard-cover{
+  position:absolute; inset:0; z-index:2; border-radius:3px;
+  background:repeating-linear-gradient(135deg, var(--rbf) 0 9px, #A82A1B 9px 18px);
+  border:1px solid rgba(0,0,0,.45);
+  box-shadow:0 6px 16px -8px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.28);
+  transform-origin:top center; transition:transform .42s cubic-bezier(.3,1.4,.5,1);
+  display:grid; place-items:center;
+  font-size:8px; letter-spacing:.16em; color:#fff; text-transform:uppercase; text-align:center;
+}
+.guard:hover .guard-cover,.guard:focus-within .guard-cover{transform:rotateX(-108deg)}
+.guard-sw{
+  position:absolute; inset:0; z-index:1; border-radius:3px; display:grid; place-items:center;
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--rule-2); text-decoration:none;
+  font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--amber);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+}
+.guard-sw:hover{background:linear-gradient(180deg,var(--amber),#B87C22); color:#12181A; font-weight:700}
+@media (max-width:900px){ .phase .guard{display:none} }
+@media (max-width:520px){ .phase-read{font-size:8px; letter-spacing:.14em; padding:5px 8px} }
+
+/* ══════════════════════════════════════════════════════════════
+   SCROLLYTELLING · actos anclados
+   ══════════════════════════════════════════════════════════════ */
+.fly{position:relative; z-index:1}
+.fly-track{position:relative}
+.fly-stage{position:sticky; top:0; height:var(--stage,820px); overflow:hidden;
+  display:grid; place-items:center}
+.layer{position:absolute; inset:0}
+.layer img{width:100%; height:100%; object-fit:cover}
+.stage-copy{position:relative; z-index:6; width:100%;
+  max-width:var(--maxw); margin:0 auto; padding-inline:var(--pad)}
+
+/* ── ACTO 1 · despegue ── */
+#act-takeoff .fly-track{height:calc(var(--stage,820px) * 4)}
+.sky{position:absolute; inset:0}
+.sky img{width:100%; height:100%; object-fit:cover}
+.sky-night{background:linear-gradient(to bottom,#04070A 0%,#0A1218 55%,#101A1D 100%)}
+
+/* pista en perspectiva */
+.runway{position:absolute; left:50%; bottom:0; width:260vw; height:calc(var(--stage,820px) * .78);
+  transform:translateX(-50%) perspective(340px) rotateX(68deg);
+  transform-origin:bottom center; overflow:hidden;
+  background:linear-gradient(to top,#161D1F 0%,#0B1012 66%,transparent 100%);
+}
+/* OJO: background-position en % NO mueve un degradado repetido (la imagen mide
+   lo mismo que el elemento). Hay que fijar background-size en px para que corra. */
+.runway::before{content:''; position:absolute; left:50%; top:0; bottom:0; width:3vw;
+  transform:translateX(-50%);
+  background-image:repeating-linear-gradient(to bottom,
+    rgba(236,240,237,.95) 0 46px, transparent 46px 140px);
+  background-size:100% 140px; background-repeat:repeat-y;
+  background-position:0 calc(var(--rw,0) * 1px);
+}
+/* luces de borde · dentro de la franja visible (el elemento mide 260vw) */
+.rw-lights{position:absolute; top:0; bottom:0; width:1.1vw;
+  background-image:repeating-linear-gradient(to bottom,
+    rgba(232,163,61,.98) 0 11px, transparent 11px 92px);
+  background-size:100% 92px; background-repeat:repeat-y;
+  background-position:0 calc(var(--rw,0) * 1px);
+  box-shadow:0 0 26px rgba(232,163,61,.65);
+}
+.rw-lights.l{left:41%} .rw-lights.r{right:41%}
+
+.hero-logo{width:min(70vw,640px); height:auto; margin-inline:auto;
+  filter:drop-shadow(0 16px 40px rgba(0,0,0,.7))}
+.hero-tag{width:min(52vw,430px); height:auto; margin:20px auto 0; opacity:.82;
+  filter:drop-shadow(0 8px 22px rgba(0,0,0,.6))}
+.hero-h1{font-size:clamp(26px,4.4vw,58px); color:#F2F6F3; text-align:center;
+  max-width:17ch; margin:clamp(26px,4vw,46px) auto 0; line-height:1.0;
+  text-shadow:0 12px 40px rgba(0,0,0,.7)}
+.hero-note{font-family:var(--mono); font-size:10px; letter-spacing:.28em;
+  text-transform:uppercase; color:rgba(240,245,242,.7); text-align:center; margin-top:22px}
+
+.cue{position:absolute; left:50%; bottom:clamp(96px,13vh,150px); transform:translateX(-50%);
+  z-index:7; font-family:var(--mono); font-size:9.5px; letter-spacing:.26em;
+  text-transform:uppercase; color:rgba(240,245,242,.62); text-align:center;
+  display:flex; flex-direction:column; align-items:center; gap:9px}
+.cue i{width:1px; height:34px; background:linear-gradient(to bottom,var(--amber),transparent);
+  animation:drop 2.4s ease-in-out infinite}
+@keyframes drop{0%,100%{transform:scaleY(.3); transform-origin:top}50%{transform:scaleY(1); transform-origin:top}}
+
+/* ── ACTO 2 · crucero / manifiesto ── */
+#act-cruise .fly-track{height:calc(var(--stage,820px) * 3)}
+.manifest{max-width:min(90vw,720px); margin-inline:auto; text-align:center}
+.manifest .ln{
+  display:block; font-family:var(--display); font-weight:700; font-stretch:semi-condensed;
+  font-size:clamp(21px,3.1vw,44px); line-height:1.16; color:#F2F6F3;
+  text-shadow:0 10px 34px rgba(0,0,0,.62); text-wrap:balance;
+  opacity:0; transform:translateY(20px); transition:opacity .1s linear, transform .1s linear;
+}
+/* la firma lleva .ln para animarse, pero NO debe heredar la tipografia grande */
+.manifest cite.ln{margin-top:clamp(22px,3vw,34px); font-family:var(--mono); font-style:normal;
+  font-weight:400; font-stretch:normal; font-size:10px; letter-spacing:.24em;
+  text-transform:uppercase; color:var(--amber); text-shadow:none; line-height:1.6}
+
+/* ── ACTO 3 · la flota (barrido horizontal) ── */
+#act-fleet .fly-track{height:calc(var(--stage,820px) * 3.6)}
+#act-fleet .fly-stage{place-items:stretch}
+.fleet-rail{position:absolute; top:clamp(150px,21vh,210px); bottom:0; left:0; display:flex; align-items:center;
+  gap:clamp(18px,3vw,44px); padding-inline:8vw; will-change:transform;
+  transform:translateX(calc(var(--px,0) * -1px))}
+.fleet-card{flex:0 0 auto; width:min(78vw,420px);
+  border:1px solid var(--rule); background:var(--plate); overflow:hidden;
+  display:flex; flex-direction:column}
+.fleet-card img{width:100%; aspect-ratio:4/3; object-fit:cover}
+.fleet-body{padding:20px 22px 24px; display:flex; flex-direction:column; gap:9px}
+.fleet-tail{font-family:var(--mono); font-size:9.5px; letter-spacing:.22em;
+  text-transform:uppercase; color:var(--amber)}
+.fleet-card h3{font-size:clamp(28px,3.4vw,44px); letter-spacing:-.01em}
+.fleet-card p{font-size:15px; color:var(--ink-2); line-height:1.55}
+.fleet-head{position:absolute; top:clamp(74px,11vh,116px); left:0; right:0; z-index:8;
+  text-align:center; pointer-events:none}
+.fleet-head .eyebrow{justify-content:center}
+.fleet-head .eyebrow::after{display:none}
+.fleet-card.fleet-more{display:flex; align-items:center;
+  background:linear-gradient(160deg, color-mix(in srgb,var(--amber) 12%,transparent), transparent 70%);
+  border-style:dashed; border-color:var(--rule-2)}
+.fleet-more .fleet-body{gap:12px}
+.more-cta{align-self:flex-start; margin-top:6px; text-decoration:none;
+  font-family:var(--mono); font-size:10px; letter-spacing:.18em; text-transform:uppercase;
+  padding:12px 20px; border:1px solid var(--amber); color:var(--amber);
+  transition:background .28s ease, color .28s ease}
+.more-cta:hover,.more-cta:focus-visible{background:var(--amber); color:var(--ground)}
+
+/* ── ACTO 4 · descenso y aterrizaje ── */
+#act-land .fly-track{height:calc(var(--stage,820px) * 4)}
+.touch{position:absolute; inset:0; background:#FFF; opacity:0; z-index:8; pointer-events:none}
+.land-copy{text-align:center}
+.land-alt{font-family:var(--mono); font-size:clamp(44px,9vw,120px); font-weight:700;
+  letter-spacing:.02em; color:var(--amber); font-variant-numeric:tabular-nums; line-height:1;
+  text-shadow:0 0 40px rgba(232,163,61,.35)}
+.land-lbl{font-family:var(--mono); font-size:11px; letter-spacing:.34em; text-transform:uppercase;
+  color:rgba(240,245,242,.72); margin-top:16px}
+.land-msg{font-family:var(--display); font-weight:800; text-transform:uppercase;
+  font-stretch:condensed; font-size:clamp(30px,6vw,78px); color:#F2F6F3; margin-top:26px;
+  opacity:0; transform:scale(.94); transition:none}
+
+/* ══════════════════════════════════════════════════════════════
+   CONTENIDO
+   ══════════════════════════════════════════════════════════════ */
+.rv{opacity:0; transform:translateY(26px); transition:opacity .8s cubic-bezier(.2,.7,.3,1), transform .8s cubic-bezier(.2,.7,.3,1)}
+.rv.in{opacity:1; transform:none}
+
+.pieces{display:grid; gap:clamp(16px,2.2vw,28px); grid-template-columns:repeat(auto-fit,minmax(268px,1fr))}
+.piece{background:var(--plate); border:1px solid var(--rule); display:flex; flex-direction:column;
+  overflow:hidden; transition:border-color .4s ease, transform .4s ease}
+.piece:hover{border-color:var(--amber-dim); transform:translateY(-4px)}
+.piece.wide{grid-column:span 2}
+@media (max-width:719px){ .piece.wide{grid-column:span 1} }
+.piece figure{margin:0; position:relative; overflow:hidden; background:var(--panel)}
+.piece figure img{width:100%; aspect-ratio:4/3; object-fit:cover;
+  transition:transform .9s cubic-bezier(.2,.7,.3,1)}
+.piece:hover figure img{transform:scale(1.045)}
+.stamp{position:absolute; top:11px; left:11px; z-index:2; font-family:var(--mono);
+  font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+  background:var(--rbf); color:#fff; padding:4px 8px}
+.stamp.alt-stamp{background:transparent; color:var(--amber); border:1px solid var(--amber)}
+.piece-body{padding:19px 20px 22px; display:flex; flex-direction:column; gap:11px; flex:1}
+.piece .desc{font-size:15px; color:var(--ink-2); line-height:1.55}
+.spec{margin-top:auto; padding-top:13px; border-top:1px solid var(--rule);
+  display:flex; flex-direction:column; gap:5px; font-family:var(--mono); font-size:10px;
+  letter-spacing:.09em; text-transform:uppercase}
+.spec .row{display:flex; align-items:baseline; gap:7px}
+.spec .k{color:var(--ink-3)} .spec .v{color:var(--ink-2); text-align:right}
+.spec .dots{flex:1; border-bottom:1px dotted var(--rule-2); transform:translateY(-3px)}
+
+/* bolsas */
+.bags{display:grid; gap:clamp(14px,2vw,24px); grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.bag{border:1px solid var(--rule); background:var(--plate); overflow:hidden}
+.bag img{width:100%; aspect-ratio:3/4; object-fit:cover; transition:transform .8s cubic-bezier(.2,.7,.3,1)}
+.bag:hover img{transform:scale(1.05)}
+.bag-cap{padding:13px 14px 16px; font-family:var(--mono); font-size:10px; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--ink-2); display:flex; flex-direction:column; gap:5px}
+.bag-cap b{color:var(--ink); font-size:11px; letter-spacing:.16em; font-weight:700}
+
+/* archivo aéreo */
+.archive{display:grid; gap:clamp(12px,1.6vw,20px);
+  grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.archive figure{margin:0; position:relative; overflow:hidden; border:1px solid var(--rule)}
+.archive img{width:100%; aspect-ratio:3/2; object-fit:cover;
+  transition:transform .9s cubic-bezier(.2,.7,.3,1), filter .6s ease; filter:saturate(.92)}
+.archive figure:hover img{transform:scale(1.06); filter:saturate(1.08)}
+.archive figcaption{position:absolute; left:0; right:0; bottom:0; padding:22px 13px 10px;
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.14em; text-transform:uppercase;
+  color:#EEF3F0; background:linear-gradient(to top,rgba(4,7,8,.88),transparent)}
+
+/* historia */
+.story{display:grid; gap:clamp(28px,4vw,60px); align-items:center; grid-template-columns:1fr}
+@media (min-width:940px){ .story{grid-template-columns:.95fr 1fr} }
+.story figure{margin:0}
+.story img{width:100%; box-shadow:var(--shadow)}
+.story figcaption{margin-top:12px; font-family:var(--mono); font-size:10px;
+  letter-spacing:.15em; text-transform:uppercase; color:var(--ink-3)}
+
+/* contacto */
+.contact{display:grid; gap:clamp(26px,4vw,56px); grid-template-columns:1fr}
+@media (min-width:880px){ .contact{grid-template-columns:1.05fr .95fr} }
+.ct-lines{display:flex; flex-direction:column; gap:2px; margin-top:8px}
+.ct-line{display:flex; align-items:baseline; gap:12px; padding:13px 0;
+  border-bottom:1px solid var(--rule); font-family:var(--mono); font-size:11px;
+  letter-spacing:.14em; text-transform:uppercase}
+.ct-line .k{color:var(--ink-3); min-width:88px}
+.ct-line .v{color:var(--ink); font-size:14px; letter-spacing:.06em; text-decoration:none}
+a.ct-line .v{border-bottom:1px solid var(--amber-dim)}
+a.ct-line:hover .v{color:var(--amber)}
+.ct-line.primary{border-bottom-color:var(--amber-dim)}
+.ct-line.primary .k{color:var(--amber)}
+.ct-line.primary .v{font-size:17px; letter-spacing:.04em}
+.plate{border:1px solid var(--rule-2); background:var(--plate); padding:clamp(20px,3vw,32px);
+  display:flex; flex-direction:column; gap:15px}
+.plate h3{color:var(--amber)}
+.plate p{font-size:15px; color:var(--ink-2); line-height:1.6}
+
+/* pie */
+.foot{border-top:1px solid var(--rule); padding-block:44px 60px; position:relative; z-index:2}
+.foot-in{display:flex; flex-wrap:wrap; gap:22px; align-items:center; justify-content:space-between}
+.foot img{width:112px; height:auto}
+.foot small{font-family:var(--mono); font-size:9.5px; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--ink-3); line-height:1.9}
+
+/* aviso de demo */
+.disclaimer{border:1px solid var(--rbf); padding:16px 20px; display:flex; gap:14px;
+  align-items:flex-start; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--ink-2); line-height:1.8; margin-top:38px}
+.disclaimer b{color:var(--rbf)}
+
+/* ══════════════════════════════════════════════════════════════
+   ACABADO · grano de película y calibrado de foto
+   ══════════════════════════════════════════════════════════════ */
+/* grano finísimo solo sobre los actos de vuelo: les da cuerpo de cine
+   y disimula el banding de los degradados de cielo */
+.fly-stage::after{
+  content:''; position:absolute; inset:0; z-index:7; pointer-events:none; opacity:.055;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* las fotos vienen de un iPhone 6s y de una Fujifilm: un punto de contraste
+   y saturación común hace que parezcan del mismo reportaje */
+.piece figure img,.bag img,.fleet-card img,.story img{
+  filter:saturate(1.04) contrast(1.05);
+}
+.archive img{filter:saturate(.94) contrast(1.06)}
+.archive figure:hover img{filter:saturate(1.1) contrast(1.06)}
+
+/* filo cálido al pasar por encima de una pieza */
+.piece{position:relative}
+.piece::after{content:''; position:absolute; left:0; right:0; top:0; height:2px;
+  background:var(--amber); transform:scaleX(0); transform-origin:left;
+  transition:transform .45s cubic-bezier(.2,.7,.3,1)}
+.piece:hover::after{transform:scaleX(1)}
+
+/* ══ tira de credenciales ══ */
+.creds{border-block:1px solid var(--rule); position:relative; z-index:2}
+.creds-in{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1px; background:var(--rule)}
+.creds-in div{background:var(--ground); padding:clamp(20px,3vw,30px) 18px;
+  display:flex; flex-direction:column; gap:6px}
+.creds b{font-family:var(--display); font-weight:800; font-stretch:condensed;
+  font-size:clamp(24px,3vw,34px); line-height:1; color:var(--amber)}
+.creds span{font-family:var(--mono); font-size:9.5px; letter-spacing:.18em;
+  text-transform:uppercase; color:var(--ink-3); line-height:1.5}
+
+/* ══════════════════════════════════════════════════════════════
+   MOVIMIENTO REDUCIDO
+   ══════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .fly-stage::after{display:none}
+  *,*::before,*::after{animation-duration:.001ms !important; animation-iteration-count:1 !important;
+    transition-duration:.001ms !important}
+  .fly-track{height:auto !important}
+  .fly-stage{position:relative; height:auto; min-height:0; padding-block:64px}
+  .manifest .ln{opacity:1 !important; transform:none !important}
+  .land-msg{opacity:1 !important; transform:none !important}
+  .fleet-rail{position:relative; transform:none !important; overflow-x:auto; padding-block:40px}
+  .rv{opacity:1; transform:none}
+}
+</style>
+
+<!-- ══════════════════ CARCASA DE CABINA ══════════════════ -->
+<div class="cockpit" aria-hidden="true">
+  <div class="pillars"></div>
+  <div class="rivets l"></div>
+  <div class="rivets r"></div>
+</div>
+
+<!-- ══════════════════ PFD ══════════════════ -->
+<div class="pfd" aria-hidden="true">
+  <div class="gauge tape">
+    <div class="tape-ticks"></div>
+    <div class="tape-fill" id="spdFill"></div>
+    <div class="g-cap">Vel · kt</div>
+    <div class="g-val" id="spdVal">000</div>
+  </div>
+
+  <div class="adi gauge">
+    <div class="adi-ball"></div>
+    <div class="adi-ladder">
+      <i style="top:32%; width:34px"></i>
+      <i style="top:41%; width:20px"></i>
+      <i style="top:59%; width:20px"></i>
+      <i style="top:68%; width:34px"></i>
+    </div>
+    <div class="adi-wing"></div>
+    <div class="adi-bank"></div>
+  </div>
+
+  <div class="gauge tape">
+    <div class="tape-ticks"></div>
+    <div class="tape-fill" id="altFill"></div>
+    <div class="g-cap">Alt · ft</div>
+    <div class="g-val" id="altVal">0</div>
+  </div>
+
+  <div class="gauge hdg">
+    <div class="hdg-tape"></div>
+    <div class="hdg-mark"></div>
+    <div class="hdg-lbl" id="hdgVal">000°</div>
+  </div>
+</div>
+
+<!-- ══════════════════ FASE + INTERRUPTOR ══════════════════ -->
+<div class="phase">
+  <div class="phase-read" aria-hidden="true"><span class="led"></span><span id="phaseVal">En tierra</span></div>
+  <div class="guard">
+    <a class="guard-sw" href="https://wa.me/34600405655">WhatsApp</a>
+    <span class="guard-cover" aria-hidden="true">Levantar<br>la guarda</span>
+  </div>
+</div>
+
+<!-- ══════════════════ GLARESHIELD ══════════════════ -->
+<header class="top">
+  <span class="brand">
+    <img class="logo" src="img/u00.png" alt="Flymito">
+    
+  </span>
+  <nav class="annun" aria-label="Secciones">
+    <a href="#piezas">Piezas</a>
+    <a href="#bolsas">Bolsas</a>
+    <a href="#flota">Flota</a>
+    <a href="#archivo">Archivo</a>
+    <a href="#historia">Historia</a>
+    <a href="#contacto">Contacto</a>
+  </nav>
+  <button class="switch" id="themeSw" role="switch" aria-checked="false" aria-label="Luces de cabina: día o noche">
+    <span class="sw-body"><span class="sw-bat"></span></span>
+    <span class="sw-lbl">
+      <b class="on" id="lblDay">Día</b>
+      <b id="lblNight">Noche</b>
+    </span>
+  </button>
+</header>
+
+<main>
+
+<!-- ══════════════════ ACTO 1 · DESPEGUE ══════════════════ -->
+<section class="fly" id="act-takeoff">
+  <div class="fly-track">
+    <div class="fly-stage">
+      <div class="layer sky-night" id="skyNight"></div>
+      <div class="layer sky" id="skyDawn" style="opacity:0"><img src="img/u01.webp" alt=""></div>
+      <div class="layer sky" id="skyDay" style="opacity:0"><img src="img/u02.webp" alt=""></div>
+
+      <div class="runway" id="runway">
+        <span class="rw-lights l"></span>
+        <span class="rw-lights r"></span>
+      </div>
+
+      <div class="stage-copy" id="takeoffCopy">
+        <img class="hero-logo logo-on-photo" src="img/u00.png" alt="Flymito">
+        <img class="hero-tag logo-on-photo" src="img/u03.png" alt="Aviation Furniture and Design">
+        <h1 class="hero-h1">Todo lo que vendemos ha volado antes</h1>
+        <p class="hero-note">Piezas de avión reales · restauradas a mano · ninguna igual a otra</p>
+      </div>
+
+      <p class="cue" id="cue"><i></i> Desliza para despegar</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ ACTO 2 · CRUCERO ══════════════════ -->
+<section class="fly" id="act-cruise">
+  <div class="fly-track">
+    <div class="fly-stage">
+      <div class="layer"><img src="img/u04.webp" alt="Rayos de sol atravesando un mar de nubes visto desde el aire"></div>
+      <div class="layer" style="background:linear-gradient(to bottom,rgba(4,8,10,.62),rgba(4,8,10,.34) 40%,rgba(4,8,10,.72))"></div>
+      <div class="stage-copy">
+        <blockquote class="manifest">
+          <span class="ln" data-ln="0">No terminamos</span>
+          <span class="ln" data-ln="1">dos cosas iguales.</span>
+          <span class="ln" data-ln="2">No hay idénticos.</span>
+          <span class="ln" data-ln="3">Se trabaja a mano</span>
+          <span class="ln" data-ln="4">y en pequeña escala.</span>
+          <cite class="ln" data-ln="5">Flymito · desde 2016</cite>
+        </blockquote>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CREDENCIALES ══════════════════ -->
+<section class="creds rv" aria-label="La marca en cuatro datos">
+  <div class="wrap creds-in">
+    <div><b>2016</b><span>Trabajando<br>desde entonces</span></div>
+    <div><b>6</b><span>Modelos de avión<br>que despiezamos</span></div>
+    <div><b>100 %</b><span>Por encargo<br>ninguna igual a otra</span></div>
+    <div><b>Mundo</b><span>Enviamos<br>a donde haga falta</span></div>
+  </div>
+</section>
+
+<!-- ══════════════════ PIEZAS ══════════════════ -->
+<section class="sect wrap rv" id="piezas">
+  <div class="sect-head">
+    <p class="eyebrow">Trabajos · ejemplos del taller</p>
+    <h2>Esto es lo que sale de aquí</h2>
+    <p class="lede">No es un catálogo con existencias. Es una muestra de lo que sabemos hacer: piezas terminadas y otras a medio camino, para que veas hasta dónde se puede llegar. <b>Todo se trabaja por encargo</b>, y no hay dos iguales.</p>
+  </div>
+
+  <div class="pieces">
+    <article class="piece wide">
+      <figure><span class="stamp">Terminado</span><img src="img/u05.webp" alt="Asiento eyectable restaurado, con tapicería de cuero rojo y estructura de aluminio pulido"></figure>
+      <div class="piece-body">
+        <h3>Asiento eyectable restaurado</h3>
+        <p class="desc">La pieza más rotunda del taller. Estructura devuelta a su brillo original, mecanismos a la vista y tapicería rehecha en cuero rojo. Se sostiene de pie, se sienta de verdad y no hay forma de que pase desapercibida.</p>
+        <div class="spec">
+          <div class="row"><span class="k">Origen</span><i class="dots"></i><span class="v">Aviación militar</span></div>
+          <div class="row"><span class="k">Material</span><i class="dots"></i><span class="v">Aluminio · cuero</span></div>
+          <div class="row"><span class="k">Estado</span><i class="dots"></i><span class="v">Restaurado</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="piece">
+      <figure><span class="stamp">Terminado</span><img src="img/u06.webp" alt="Trolley de avión convertido en mueble con tapa de madera maciza"></figure>
+      <div class="piece-body">
+        <h3>Trolley convertido en mueble</h3>
+        <p class="desc">Un trolley de servicio de a bordo, pulido y rematado con tapa de madera maciza. Mueble bar, mesa auxiliar y conversación garantizada con cualquiera que entre por la puerta.</p>
+        <div class="spec">
+          <div class="row"><span class="k">Origen</span><i class="dots"></i><span class="v">Galley comercial</span></div>
+          <div class="row"><span class="k">Material</span><i class="dots"></i><span class="v">Aluminio · roble</span></div>
+          <div class="row"><span class="k">Estado</span><i class="dots"></i><span class="v">Transformado</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="piece">
+      <figure><span class="stamp">Terminado</span><img src="img/u08.webp" alt="Panel de control de cabina expuesto dentro de una urna de metacrilato"></figure>
+      <div class="piece-body">
+        <h3>Panel de cabina en urna</h3>
+        <p class="desc">Un panel de control real —interruptores, cableado y rotulación intactos— montado en metacrilato. Se lee como lo que es: ingeniería tratada como escultura.</p>
+        <div class="spec">
+          <div class="row"><span class="k">Origen</span><i class="dots"></i><span class="v">Cabina de vuelo</span></div>
+          <div class="row"><span class="k">Material</span><i class="dots"></i><span class="v">Panel · metacrilato</span></div>
+          <div class="row"><span class="k">Estado</span><i class="dots"></i><span class="v">Conservado</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="piece">
+      <figure><span class="stamp">Terminado</span><img src="img/u09.webp" alt="Hélice de madera laminada con su emblema y un pistón de motor radial pulido"></figure>
+      <div class="piece-body">
+        <h3>Hélice de madera y pistón radial</h3>
+        <p class="desc">Hélice de laminado de madera con su emblema todavía visible, y un pistón de motor radial pulido a mano. Dos objetos que cuentan un siglo de aviación sin decir una palabra.</p>
+        <div class="spec">
+          <div class="row"><span class="k">Origen</span><i class="dots"></i><span class="v">Motor de pistón</span></div>
+          <div class="row"><span class="k">Material</span><i class="dots"></i><span class="v">Nogal · aluminio</span></div>
+          <div class="row"><span class="k">Estado</span><i class="dots"></i><span class="v">Restaurado</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="piece">
+      <figure><span class="stamp">Terminado</span><img src="img/u10.webp" alt="Compuerta de carga pulida a espejo reflejando el cielo"></figure>
+      <div class="piece-body">
+        <h3>Compuerta de carga pulida</h3>
+        <p class="desc">Una compuerta de la bodega de carga, con sus remaches originales, pulida hasta reflejar el cielo. Se cuelga como un cuadro y cambia con la luz de cada hora del día.</p>
+        <div class="spec">
+          <div class="row"><span class="k">Origen</span><i class="dots"></i><span class="v">Bodega de carga</span></div>
+          <div class="row"><span class="k">Material</span><i class="dots"></i><span class="v">Aluminio pulido</span></div>
+          <div class="row"><span class="k">Estado</span><i class="dots"></i><span class="v">Restaurado</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="piece">
+      <figure><span class="stamp alt-stamp">En proceso</span><img src="img/u11.webp" alt="Estructura de dos butacas de pasaje desnudas, listas para tapizar"></figure>
+      <div class="piece-body">
+        <h3>Butacas de pasaje</h3>
+        <p class="desc">Doble asiento de cabina desnudo, listo para tapizar. Tú eliges el cuero y el acabado del metal; nosotros lo dejamos como salió de fábrica —o mejor.</p>
+        <div class="spec">
+          <div class="row"><span class="k">Origen</span><i class="dots"></i><span class="v">Cabina de pasaje</span></div>
+          <div class="row"><span class="k">Material</span><i class="dots"></i><span class="v">A elegir</span></div>
+          <div class="row"><span class="k">Estado</span><i class="dots"></i><span class="v">Bajo pedido</span></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="piece">
+      <figure><span class="stamp">Terminado</span><img src="img/u12.webp" alt="Estantería hecha con compuertas de tren de aterrizaje, con instrumentos de vuelo y una caja negra Flight Data Recorder naranja"></figure>
+      <div class="piece-body">
+        <h3>Estantería de compuertas de tren</h3>
+        <p class="desc">Las compuertas del tren de aterrizaje, convertidas en estantería. Encima, material de vuelo auténtico —incluida una <i>Flight Data Recorder</i> en su naranja reglamentario—. Piezas de museo que aquí sí se pueden tocar.</p>
+        <div class="spec">
+          <div class="row"><span class="k">Origen</span><i class="dots"></i><span class="v">Tren de aterrizaje</span></div>
+          <div class="row"><span class="k">Material</span><i class="dots"></i><span class="v">Acero · cristal</span></div>
+          <div class="row"><span class="k">Estado</span><i class="dots"></i><span class="v">Conservado</span></div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="story" style="margin-top:clamp(46px,6vw,84px)">
+    <figure>
+      <img src="img/u13.webp" alt="Salón de una casa con el asiento de comandante restaurado colocado como butaca junto a la ventana">
+      <figcaption>Asiento de comandante de 727 · instalado en casa de un cliente</figcaption>
+    </figure>
+    <div style="display:flex; flex-direction:column; gap:18px">
+      <p class="eyebrow">Así queda</p>
+      <h2>En un salón, no en un museo</h2>
+      <p class="lede">Son objetos grandes y con carácter, pero están hechos para vivirse: para sentarse, para apoyar el vaso, para que alguien pregunte de qué avión salió. Antes de montar nada te decimos medidas, peso y cómo entra por la puerta.</p>
+    </div>
+  </div>
+</section>
+
+<div class="centreline"></div>
+
+<!-- ══════════════════ BOLSAS ══════════════════ -->
+<section class="sect wrap rv" id="bolsas">
+  <div class="sect-head">
+    <p class="eyebrow">Serie corta · sí hay repetidas</p>
+    <h2>Bolsas de casco</h2>
+    <p class="lede">Bolsas de casco militares reales, con parches bordados y etiquetas de servicio. Puedes pedirlas tal cual, con los parches que tú elijas… o <b>lisas y listas para tunearlas tú mismo</b>.</p>
+  </div>
+  <div class="bags">
+    <figure class="bag" style="margin:0">
+      <img src="img/u14.webp" alt="Bolsa de casco negra con parches bordados y etiqueta Remove Before Flight">
+      <figcaption class="bag-cap"><b>Negra · RBF</b><span>Parches bordados · etiqueta roja</span></figcaption>
+    </figure>
+    <figure class="bag" style="margin:0">
+      <img src="img/u15.webp" alt="Bolsa de casco negra con parches Fragile y abeja y etiqueta Cabin Crew">
+      <figcaption class="bag-cap"><b>Negra · Cabin Crew</b><span>Parches Fragile · abeja</span></figcaption>
+    </figure>
+    <figure class="bag" style="margin:0">
+      <img src="img/u16.webp" alt="Bolsa de casco verde militar con parches y etiqueta Remove Before Flight">
+      <figcaption class="bag-cap"><b>Verde · RBF</b><span>Lona militar · etiqueta roja</span></figcaption>
+    </figure>
+    <figure class="bag" style="margin:0">
+      <img src="img/u17.webp" alt="Bolsa de casco verde militar con bandolera y etiqueta Cabin Crew">
+      <figcaption class="bag-cap"><b>Verde · bandolera</b><span>Correa larga · Cabin Crew</span></figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ══════════════════ ACTO 3 · LA FLOTA ══════════════════ -->
+<section class="fly" id="act-fleet">
+  <a id="flota" style="position:absolute; top:0"></a>
+  <div class="fly-track">
+    <div class="fly-stage">
+      <div class="layer" style="background:linear-gradient(160deg,var(--panel),var(--ground) 60%)"></div>
+      <div class="fleet-head">
+        <p class="eyebrow">De dónde sale cada cosa</p>
+        <h2 style="margin-top:12px">El despiece</h2>
+      </div>
+      <div class="fleet-rail" id="fleetRail">
+        <article class="fleet-card">
+          <img src="img/u10.webp" alt="Compuerta de carga pulida a espejo">
+          <div class="fleet-body">
+            <p class="fleet-tail">Boeing 747</p>
+            <h3>El jumbo</h3>
+            <p>Compuertas de carga con sus remaches originales. De la aeronave más grande que hemos despiezado salen los paneles más espectaculares: superficies enormes que se pulen hasta hacer espejo.</p>
+          </div>
+        </article>
+        <article class="fleet-card">
+          <img src="img/u08.webp" alt="Panel de control de cabina de Boeing 737 expuesto en urna">
+          <div class="fleet-body">
+            <p class="fleet-tail">Boeing 737</p>
+            <h3>La cabina</h3>
+            <p>Paneles de control, interruptores y rotulación original. El 737 es el avión más común del mundo y, por eso, del que más material de cabina pasa por el taller.</p>
+          </div>
+        </article>
+        <article class="fleet-card">
+          <img src="img/u11.webp" alt="Butacas de pasaje sin tapizar">
+          <div class="fleet-body">
+            <p class="fleet-tail">Douglas DC-9</p>
+            <h3>Las butacas</h3>
+            <p>Dobles de pasaje, estructura de aluminio ligero. Se desnudan hasta el metal y se vuelven a tapizar con el cuero que elijas.</p>
+          </div>
+        </article>
+        <article class="fleet-card">
+          <img src="img/u06.webp" alt="Trolley de galley convertido en mueble">
+          <div class="fleet-body">
+            <p class="fleet-tail">McDonnell Douglas MD</p>
+            <h3>Los trolleys</h3>
+            <p>Trolleys de galley completos, con sus guías y cierres. Son lo que más rápido se va: entran en cualquier casa y funcionan como mueble de verdad.</p>
+          </div>
+        </article>
+        <article class="fleet-card">
+          <img src="img/u09.webp" alt="Hélice de madera laminada">
+          <div class="fleet-body">
+            <p class="fleet-tail">Douglas DC-3</p>
+            <h3>Las hélices</h3>
+            <p>Laminado de madera de los años cuarenta, con el emblema del fabricante todavía legible. Piezas que ya eran artesanía cuando se montaron.</p>
+          </div>
+        </article>
+        <article class="fleet-card">
+          <img src="img/u18.webp" alt="Instrumentos de vuelo originales embolsados">
+          <div class="fleet-body">
+            <p class="fleet-tail">Junkers Ju-52</p>
+            <h3>Los instrumentos</h3>
+            <p>Relojería de vuelo anterior a la electrónica: altímetros, variómetros, brújulas. Se limpian, se comprueban y se montan en urna o en vitrina.</p>
+          </div>
+        </article>
+        <article class="fleet-card fleet-more">
+          <div class="fleet-body">
+            <p class="fleet-tail">Y sigue</p>
+            <h3>Y más</h3>
+            <p>La lista cambia cada temporada según lo que entre en el almacén. Si buscas una pieza concreta de un avión concreto, pregúntanos: muchas veces está, y si no, se busca.</p>
+            <a class="more-cta" href="#contacto">Preguntar por una pieza</a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="centreline"></div>
+
+<!-- ══════════════════ ARCHIVO ══════════════════ -->
+<section class="sect wrap rv" id="archivo">
+  <div class="sect-head">
+    <p class="eyebrow">Fotografía · enmarcado a medida</p>
+    <h2>El archivo de vuelo</h2>
+    <p class="lede">Fotos hechas desde la cabina, en vuelos de verdad. Se imprimen y se enmarcan al tamaño y con el acabado que quieras.</p>
+  </div>
+  <div class="archive">
+    <figure><img src="img/u01.webp" alt="Amanecer dorado sobre un mar de nubes"><figcaption>Amanecer sobre el mar de nubes</figcaption></figure>
+    <figure><img src="img/u19.webp" alt="Puesta de sol anaranjada sobre un mar de nubes"><figcaption>Última luz en crucero</figcaption></figure>
+    <figure><img src="img/u20.webp" alt="Silueta de una torre de control recortada contra un cielo rojo"><figcaption>Torre de control · cielo rojo</figcaption></figure>
+    <figure><img src="img/u21.webp" alt="Vista aérea del skyline de Madrid con las Cuatro Torres"><figcaption>Madrid desde cabina · Cuatro Torres</figcaption></figure>
+    <figure><img src="img/u04.webp" alt="Rayos de sol atravesando una capa de nubes vista desde el aire"><figcaption>Rayos sobre capa de nubes</figcaption></figure>
+    <figure><img src="img/u22.webp" alt="Estela de nubes iluminadas en tonos naranjas al atardecer"><figcaption>Estelas al atardecer</figcaption></figure>
+  </div>
+</section>
+
+<div class="centreline"></div>
+
+<!-- ══════════════════ HISTORIA ══════════════════ -->
+<section class="sect wrap rv" id="historia">
+  <div class="story">
+    <figure>
+      <img src="img/u23.webp" alt="Fotografía de los años setenta con una tripulación posando junto a un avión que lleva el nombre Murcia en el morro">
+      <figcaption>Archivo familiar · años setenta</figcaption>
+    </figure>
+    <div style="display:flex; flex-direction:column; gap:18px">
+      <p class="eyebrow">Por qué hacemos esto</p>
+      <h2>Esto no empezó como un negocio</h2>
+      <p class="lede">Empezó como una afición heredada: la aviación de cuando volar era una ceremonia. Nos gusta el arte y el diseño, la atención por las cosas bien hechas y las cosas únicas.</p>
+      <p class="lede">Por eso trabajamos a mano y en pequeña escala. No aspiramos a más: esto es lo que nos gusta. El tiempo pasa, las pasiones persisten.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ ACTO 4 · DESCENSO ══════════════════ -->
+<section class="fly" id="act-land">
+  <div class="fly-track">
+    <div class="fly-stage">
+      <div class="layer"><img src="img/u21.webp" alt="Vista aérea de Madrid en la aproximación" id="landImg"></div>
+      <div class="layer" id="landVeil" style="background:linear-gradient(to bottom,rgba(4,8,10,.55),rgba(4,8,10,.3) 45%,rgba(4,8,10,.8))"></div>
+      <div class="touch" id="touchFlash"></div>
+      <div class="stage-copy land-copy">
+        <p class="land-alt" id="landAlt">38 000</p>
+        <p class="land-lbl">Pies sobre el suelo</p>
+        <p class="land-msg" id="landMsg">En tierra</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ CONTACTO ══════════════════ -->
+<section class="sect wrap rv" id="contacto">
+  <div class="sect-head">
+    <p class="eyebrow">Aquí no hay carrito</p>
+    <h2>Todo empieza con un mensaje</h2>
+    <p class="lede">Trabajamos <b>solo por encargo</b>, así que cada pieza nace de una conversación. Cuéntanos qué tienes en la cabeza —o mándanos una foto— y te decimos qué se puede hacer, cómo quedaría y cuánto cuesta. Sin compromiso y sin prisa.</p>
+  </div>
+
+  <div class="contact">
+    <div>
+      <div class="ct-lines">
+        <a class="ct-line primary" href="https://wa.me/34600405655"><span class="k">WhatsApp</span><span class="v">+34 600 405 655</span></a>
+        <a class="ct-line" href="mailto:flymito@flymito.com"><span class="k">Correo</span><span class="v">flymito@flymito.com</span></a>
+        <a class="ct-line" href="https://www.instagram.com/flymito_aero/"><span class="k">Instagram</span><span class="v">@flymito_aero</span></a>
+        <div class="ct-line"><span class="k">Precios</span><span class="v">A consultar · cada pieza es distinta</span></div>
+        <div class="ct-line"><span class="k">Envíos</span><span class="v">A todo el mundo · tarifa a consultar</span></div>
+      </div>
+    </div>
+
+    <div class="plate">
+      <h3>Cómo funciona un encargo</h3>
+      <p><b>1 · Nos escribes.</b> Con una foto, un enlace o simplemente la idea.</p>
+      <p><b>2 · Te decimos qué se puede hacer.</b> Con medidas, acabados posibles y fotos reales de trabajos parecidos.</p>
+      <p><b>3 · Presupuesto cerrado.</b> Restauración, acabado y envío incluidos, sin sorpresas. Enviamos a todo el mundo.</p>
+      <p><b>4 · Se trabaja.</b> Te vamos mandando fotos del proceso. Es la mejor parte.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <img class="logo" src="img/u00.png" alt="Flymito">
+    <small>
+      Aviation Furniture and Design · Piezas únicas restauradas a mano<br>
+      Madrid · Trabajamos por encargo · Enviamos a todo el mundo
+    </small>
+  </div>
+</footer>
+
+</main>
+
+<script>
+(function(){
+  "use strict";
+  var root=document.documentElement;
+  var reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ─────────── interruptor DÍA / NOCHE ─────────── */
+  var sw=document.getElementById("themeSw");
+  var lblDay=document.getElementById("lblDay"), lblNight=document.getElementById("lblNight");
+  function paintSwitch(isNight){
+    sw.setAttribute("aria-checked", isNight ? "true" : "false");
+    lblNight.classList.toggle("on", isNight);
+    lblDay.classList.toggle("on", !isNight);
+  }
+  var startNight = !window.matchMedia("(prefers-color-scheme: light)").matches;
+  root.setAttribute("data-theme", startNight ? "dark" : "light");
+  paintSwitch(startNight);
+  sw.addEventListener("click", function(){
+    var night = root.getAttribute("data-theme") !== "dark";
+    root.setAttribute("data-theme", night ? "dark" : "light");
+    paintSwitch(night);
+  });
+
+  /* ─────────── utilidades ─────────── */
+  var clamp=function(v,a,b){ return v<a?a:(v>b?b:v); };
+  var sub=function(p,a,b){ return clamp((p-a)/(b-a),0,1); };
+  var lerp=function(a,b,t){ return a+(b-a)*t; };
+  var ease=function(t){ return t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; };
+
+  /* ─────────── medición de los actos ─────────── */
+  var acts={};
+  ["act-takeoff","act-cruise","act-fleet","act-land"].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) acts[id]={el:el, track:el.querySelector(".fly-track")};
+  });
+  var railW=0;
+
+  function measure(){
+    /* misma altura acotada que usa el CSS: innerHeight crudo se dispara
+       dentro de un iframe auto-alto y dejaria a.len negativo */
+    var vh = window.__stageH ? window.__stageH() : window.innerHeight;
+    root.style.setProperty("--stage", vh + "px");
+    Object.keys(acts).forEach(function(k){
+      var a=acts[k], r=a.track.getBoundingClientRect(), y=window.scrollY||window.pageYOffset;
+      a.top=r.top+y;
+      a.len=Math.max(1, a.track.offsetHeight - vh);
+    });
+    var rail=document.getElementById("fleetRail");
+    if(rail) railW=Math.max(0, rail.scrollWidth - window.innerWidth);
+  }
+
+  /* ─────────── elementos ─────────── */
+  var skyDawn=document.getElementById("skyDawn"),
+      skyDay=document.getElementById("skyDay"),
+      runway=document.getElementById("runway"),
+      takeoffCopy=document.getElementById("takeoffCopy"),
+      cue=document.getElementById("cue"),
+      lines=[].slice.call(document.querySelectorAll(".manifest .ln")),
+      rail=document.getElementById("fleetRail"),
+      landAlt=document.getElementById("landAlt"),
+      landMsg=document.getElementById("landMsg"),
+      landImg=document.getElementById("landImg"),
+      landVeil=document.getElementById("landVeil"),
+      touchFlash=document.getElementById("touchFlash"),
+      spdVal=document.getElementById("spdVal"), spdFill=document.getElementById("spdFill"),
+      altVal=document.getElementById("altVal"), altFill=document.getElementById("altFill"),
+      hdgVal=document.getElementById("hdgVal"), phaseVal=document.getElementById("phaseVal"),
+      pfd=document.querySelector(".pfd"),
+      annunLinks=[].slice.call(document.querySelectorAll(".annun a"));
+
+  var nf=new Intl.NumberFormat("es-ES");
+
+  function progOf(a){
+    if(!a) return 0;
+    var y=window.scrollY||window.pageYOffset;
+    return clamp((y-a.top)/a.len,0,1);
+  }
+
+  /* ─────────── bucle de render ─────────── */
+  function render(){
+    /* phase=null significa "ningun acto manda ahora" -> se deduce al final */
+    var alt=0, spd=0, pitch=0, roll=0, hdg=0, phase=null;
+
+    /* ACTO 1 · despegue */
+    var t=progOf(acts["act-takeoff"]);
+    if(acts["act-takeoff"]){
+      var roll_p=sub(t,.10,.42);        // carrera de despegue
+      var rot_p =sub(t,.42,.58);        // rotación
+      var climb =sub(t,.50,1.00);       // ascenso
+
+      spd=lerp(0,168,ease(roll_p));
+      if(climb>0) spd=lerp(168,472,ease(climb));
+      alt=lerp(0,38000,ease(climb));
+      pitch=lerp(0,-13,ease(rot_p))*(1-sub(t,.86,1));
+      hdg=lerp(0,32,ease(climb));
+
+      if(runway){
+        runway.style.setProperty("--rw", (t*3400).toFixed(1));
+        runway.style.opacity=String(1-sub(t,.46,.66));
+        /* el angulo base debe coincidir con el del CSS (68deg) */
+        runway.style.transform="translateX(-50%) perspective(340px) rotateX("+(68-sub(t,.42,.72)*24).toFixed(2)+"deg)";
+      }
+      if(skyDawn) skyDawn.style.opacity=String(sub(t,.34,.62)*(1-sub(t,.66,.92)));
+      if(skyDay)  skyDay.style.opacity =String(sub(t,.66,.94));
+      if(takeoffCopy){
+        var out=sub(t,.06,.36);
+        takeoffCopy.style.opacity=String(1-out);
+        takeoffCopy.style.transform="translateY("+(-out*70).toFixed(1)+"px) scale("+(1-out*.06).toFixed(3)+")";
+      }
+      if(cue) cue.style.opacity=String(1-sub(t,0,.12));
+
+      if(t<=0)        phase="En tierra";
+      else if(t<.42)  phase="Carrera de despegue";
+      else if(t<.58)  phase="Rotación";
+      else if(t<1)    phase="Ascenso";
+    }
+
+    /* ACTO 2 · crucero */
+    var c=progOf(acts["act-cruise"]);
+    if(acts["act-cruise"] && c>0 && c<1){
+      alt=38000; spd=472; phase="Crucero · FL380";
+      roll=Math.sin(c*Math.PI*2)*2.4;
+      hdg=32+c*6;
+    } else if(c>=1){ alt=38000; spd=472; hdg=38; }
+
+    if(lines.length && !reduced){
+      lines.forEach(function(el,i){
+        var a=.08+i*.115, o=sub(c,a,a+.14);
+        el.style.opacity=String(o);
+        el.style.transform="translateY("+((1-o)*20).toFixed(1)+"px)";
+      });
+    }
+
+    /* ACTO 3 · flota */
+    var f=progOf(acts["act-fleet"]);
+    if(acts["act-fleet"] && rail && !reduced){
+      rail.style.setProperty("--px", (f*railW).toFixed(1));
+      if(f>0&&f<1){ alt=38000; spd=472; phase="Crucero · revisando carga"; roll=lerp(0,-6,Math.sin(f*Math.PI)); }
+    }
+
+    /* ACTO 4 · descenso y aterrizaje */
+    var l=progOf(acts["act-land"]);
+    if(acts["act-land"]){
+      if(l>0){
+        var desc=sub(l,.02,.74), flare=sub(l,.74,.88), down=sub(l,.88,1);
+        alt=lerp(38000,0,ease(desc));
+        spd=lerp(472,138,ease(desc));
+        pitch=lerp(0,4.5,desc)-lerp(0,9,flare);
+        roll=Math.sin(l*Math.PI*3)*1.6*(1-desc);
+        hdg=lerp(38,-8,ease(desc));   /* giro corto por la izquierda, no dando la vuelta */
+        if(desc>=1){ alt=lerp(0,0,1); }
+        if(down>0){ alt=0; spd=lerp(138,0,ease(down)); pitch=lerp(-4.5,0,ease(down)); }
+
+        if(l<.74) phase="Descenso";
+        else if(l<.88) phase="Aproximación final";
+        else phase="En tierra";
+
+        if(landImg) landImg.style.transform="scale("+(1+desc*.34).toFixed(3)+")";
+        if(landVeil) landVeil.style.opacity=String(1-sub(l,.1,.6)*.45);
+        if(touchFlash) touchFlash.style.opacity=String(Math.max(0, Math.sin(sub(l,.84,.92)*Math.PI))*.72);
+        if(landAlt) landAlt.textContent=nf.format(Math.round(alt/100)*100);
+        if(landMsg && !reduced){
+          var m=sub(l,.88,.97);
+          landMsg.style.opacity=String(m);
+          landMsg.style.transform="scale("+lerp(.94,1,ease(m)).toFixed(3)+")";
+        }
+      }
+      if(l>=1){ alt=0; spd=0; pitch=0; roll=0; phase="En tierra"; }
+    }
+
+    /* entre actos (leyendo catalogo) no hay fase declarada: se deduce del altimetro */
+    if(phase===null) phase = alt>=30000 ? "Crucero · FL380" : (alt>0 ? "En ruta" : "En tierra");
+
+    /* ── escribir instrumentos ── */
+    root.style.setProperty("--pitch", pitch.toFixed(2));
+    root.style.setProperty("--roll", roll.toFixed(2));
+    root.style.setProperty("--hdg", hdg.toFixed(1));
+
+    if(altVal) altVal.textContent = alt>=1000 ? nf.format(Math.round(alt/100)*100) : String(Math.round(alt));
+    if(altFill) altFill.style.setProperty("--fill",(alt/38000*100).toFixed(1));
+    if(spdVal) spdVal.textContent = String(Math.round(spd)).padStart(3,"0");
+    if(spdFill) spdFill.style.setProperty("--fill",(spd/500*100).toFixed(1));
+    if(hdgVal){
+      var h=((Math.round(hdg)%360)+360)%360;
+      hdgVal.textContent = String(h).padStart(3,"0")+"°";
+    }
+    if(phaseVal && phaseVal.textContent!==phase) phaseVal.textContent=phase;
+
+    /* el PFD se atenúa mientras se lee catálogo */
+    var flying = (t>0&&t<1)||(c>0&&c<1)||(f>0&&f<1)||(l>0&&l<1);
+    if(pfd) pfd.style.setProperty("--pfd-op", flying ? "1" : ".42");
+  }
+
+  /* ─────────── rAF ─────────── */
+  var ticking=false;
+  function onScroll(){
+    if(ticking) return;
+    ticking=true;
+    window.requestAnimationFrame(function(){ render(); ticking=false; });
+  }
+  window.addEventListener("scroll",onScroll,{passive:true});
+  window.addEventListener("resize",function(){ measure(); onScroll(); });
+
+  /* ─────────── reveals ─────────── */
+  if("IntersectionObserver" in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } });
+    },{rootMargin:"0px 0px -12% 0px", threshold:.08});
+    document.querySelectorAll(".rv").forEach(function(el){ io.observe(el); });
+
+    /* anunciadores encendidos por sección visible */
+    var secIo=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        var link=annunLinks.filter(function(a){ return a.getAttribute("href")==="#"+e.target.id; })[0];
+        if(link) link.classList.toggle("lit", e.isIntersecting && e.intersectionRatio>.16);
+      });
+    },{threshold:[0,.16,.5]});
+    ["piezas","bolsas","flota","archivo","historia","contacto"].forEach(function(id){
+      var el=document.getElementById(id);
+      if(el) secIo.observe(el.closest("section")||el);
+    });
+  } else {
+    document.querySelectorAll(".rv").forEach(function(el){ el.classList.add("in"); });
+  }
+
+  /* ─────────── arranque ─────────── */
+  function boot(){ measure(); render(); }
+  if(document.readyState==="complete") boot();
+  else window.addEventListener("load", boot);
+  measure(); render();
+})();
+</script>
+
+</body>
+</html>

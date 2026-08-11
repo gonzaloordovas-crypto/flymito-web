@@ -299,6 +299,8 @@ section[id],main a[id]{scroll-margin-top:84px}
   box-shadow:0 2px 5px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.9);
   transition:top .22s cubic-bezier(.4,1.6,.5,1);}
 .switch[aria-checked="true"] .sw-bat{top:17px}
+.snd-sw[aria-checked="true"] .sw-bat{top:17px}
+.snd-sw[aria-checked="false"] .sw-bat{top:2px}
 .sw-lbl{display:flex; flex-direction:column; gap:2px; font-size:8px; letter-spacing:.14em;
   text-transform:uppercase; line-height:1.25}
 .sw-lbl b{font-weight:400; color:var(--ink-3)}
@@ -400,6 +402,11 @@ section[id],main a[id]{scroll-margin-top:84px}
 @keyframes blip{0%,100%{opacity:1}50%{opacity:.3}}
 
 .phase-acts{display:flex; align-items:center; gap:10px; pointer-events:auto}
+/* el altavoz vive en la cabecera, junto al interruptor de dia/noche */
+.switch.snd-sw{display:none}
+:root[data-audio="on"] .switch.snd-sw{display:flex}
+.snd-sw .sw-ico{width:16px; height:16px; flex:0 0 auto; color:var(--ink-3)}
+.snd-sw[aria-checked="true"] .sw-ico{color:var(--amber)}
 .guard{position:relative; width:118px; height:52px; pointer-events:auto}
 .guard-cover{
   position:absolute; inset:0; z-index:2; border-radius:3px;
@@ -452,7 +459,7 @@ section[id],main a[id]{scroll-margin-top:84px}
 /* El altavoz NO flota por su cuenta: vive dentro de la columna de la derecha,
    junto al boton de WhatsApp. Antes iba en posicion fija y se comia el rotulo
    de fase (Crucero / Aproximacion / En tierra). */
-.snd{position:relative; z-index:56;
+.snd{display:none !important; position:relative; z-index:56;
   width:40px; height:40px; border-radius:50%; display:none; place-items:center;
   flex:0 0 auto;
   cursor:pointer; color:var(--amber); border:1px solid var(--rule-2);
@@ -666,7 +673,8 @@ section[id],main a[id]{scroll-margin-top:84px}
    gestor: filo metálico, cuatro tornillos y poco más. Sobre una foto grande,
    el brillo competiría con ella. Los tornillos son degradados radiales, así
    que no añaden ni un elemento a la página. */
-.placa-titulo{position:relative; display:inline-block; padding:clamp(14px,2vw,20px) clamp(26px,4vw,44px);
+.placa-titulo{position:relative; display:inline-block; max-width:min(92vw,560px);
+  padding:clamp(13px,1.8vw,18px) clamp(22px,3vw,36px);
   border-radius:4px;
   background:
     radial-gradient(circle at 13px 13px,
@@ -681,8 +689,9 @@ section[id],main a[id]{scroll-margin-top:84px}
     linear-gradient(160deg, color-mix(in srgb,var(--ink) 7%,transparent), transparent 62%);
   border:1px solid var(--rule-2);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 10px 26px -22px rgba(0,0,0,.9)}
-.placa-titulo h2{margin:0}
-@media (max-width:600px){ .placa-titulo{padding:13px 20px; display:block} }
+.placa-titulo h2{margin:0; text-align:center}
+/* se ajusta al texto: nada de ancho completo, que se veia alargadisima */
+@media (max-width:600px){ .placa-titulo{padding:12px 22px} }
 
 /* bolsas */
 .bags{display:grid; gap:clamp(14px,2vw,24px); grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
@@ -877,6 +886,10 @@ a.ct-line:hover .v{color:var(--amber)}
   </nav>
   <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="annun" aria-label="Secciones">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"></path></svg>
+  </button>
+  <button class="switch snd-sw" id="sndSw2" role="switch" aria-checked="true" aria-label="Sonido de cabina">
+    <svg class="sw-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
+    <span class="sw-body"><span class="sw-bat"></span></span>
   </button>
   <button class="switch" id="themeSw" role="switch" aria-checked="false" aria-label="Luces de cabina: día o noche">
     <span class="sw-body"><span class="sw-bat"></span></span>
@@ -1590,15 +1603,16 @@ a.ct-line:hover .v{color:var(--amber)}
           hecho de sobra, asi que el permiso esta dado.
      Arranca al empezar el DESCENSO, con el altimetro en 38.000 pies, y suena
      mientras el avion baja. */
-  var audio=document.getElementById("cabinaAudio"), sndBtn=document.getElementById("sndBtn");
+  var audio=document.getElementById("cabinaAudio"), sndBtn=document.getElementById("sndSw2");
   if(audio && sndBtn && root.getAttribute("data-audio")==="on"){
     var mudo=false;
     try{ mudo = localStorage.getItem("fm_sonido")==="no" }catch(e){}
     var lanzado=false;
     function pintarSnd(){
-      sndBtn.classList.toggle("mudo", mudo);
-      sndBtn.classList.toggle("suena", !mudo && !audio.paused);
-      sndBtn.setAttribute("aria-pressed", (!mudo).toString());
+      /* el interruptor de la cabecera se comporta como el de dia/noche:
+         palanca abajo = sonido encendido */
+      sndBtn.setAttribute("aria-checked", (!mudo).toString());
+      sndBtn.title = mudo ? "Sonido apagado" : "Sonido encendido";
     }
     function arrancar(){
       if(lanzado || mudo) return;

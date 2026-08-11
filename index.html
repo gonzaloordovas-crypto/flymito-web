@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es" data-audio="on" data-piel="marca"><head>
+<html lang="es" data-audio="on"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>FLYMITO · Muebles y objetos hechos con piezas de avión reales</title>
@@ -399,6 +399,7 @@ section[id],main a[id]{scroll-margin-top:84px}
   box-shadow:0 0 8px var(--green); animation:blip 2.4s ease-in-out infinite}
 @keyframes blip{0%,100%{opacity:1}50%{opacity:.3}}
 
+.phase-acts{display:flex; align-items:center; gap:10px; pointer-events:auto}
 .guard{position:relative; width:118px; height:52px; pointer-events:auto}
 .guard-cover{
   position:absolute; inset:0; z-index:2; border-radius:3px;
@@ -448,8 +449,12 @@ section[id],main a[id]{scroll-margin-top:84px}
    Los navegadores PROHIBEN que un sonido arranque solo: hace falta que el
    visitante toque o deslice algo primero. Asi que el altavoz aparece siempre y
    el audio se lanza en cuanto hay el primer gesto. Quien no quiera, lo apaga. */
-.snd{position:fixed; right:16px; bottom:calc(16px + 62px); z-index:56;
+/* El altavoz NO flota por su cuenta: vive dentro de la columna de la derecha,
+   junto al boton de WhatsApp. Antes iba en posicion fija y se comia el rotulo
+   de fase (Crucero / Aproximacion / En tierra). */
+.snd{position:relative; z-index:56;
   width:40px; height:40px; border-radius:50%; display:none; place-items:center;
+  flex:0 0 auto;
   cursor:pointer; color:var(--amber); border:1px solid var(--rule-2);
   background:var(--glass); backdrop-filter:blur(10px);
   box-shadow:0 10px 24px -14px rgba(0,0,0,.9)}
@@ -462,7 +467,7 @@ section[id],main a[id]{scroll-margin-top:84px}
   border:1px solid var(--amber); opacity:0; transform:scale(.8)}
 .snd.suena::after{animation:onda 2.2s ease-out infinite}
 @keyframes onda{0%{opacity:.55; transform:scale(.85)} 100%{opacity:0; transform:scale(1.5)}}
-@media (max-width:900px){ .snd{bottom:calc(16px + 66px)} }
+
 @media (prefers-reduced-motion:reduce){ .snd.suena::after{animation:none} }
 
 /* ══════════════════════════════════════════════════════════════
@@ -544,8 +549,10 @@ section[id],main a[id]{scroll-margin-top:84px}
 #act-fleet .fly-track{height:calc(var(--stage,820px) * 3.6)}
 #act-fleet .fly-stage{place-items:stretch}
 .fleet-rail{position:absolute; top:clamp(150px,21vh,210px); bottom:0; left:0; display:flex; align-items:center;
-  gap:clamp(18px,3vw,44px); padding-inline:8vw; will-change:transform;
-  transform:translateX(calc(var(--px,0) * -1px))}
+  gap:clamp(18px,3vw,44px); padding-inline:8vw;
+  /* capa propia en la tarjeta grafica: asi el barrido no repinta nada mas */
+  will-change:transform; transform:translate3d(0,0,0);
+  backface-visibility:hidden; -webkit-backface-visibility:hidden}
 /* acotar el alto: si no, tapan la cabecera */
 .fleet-card{flex:0 0 auto; width:min(78vw,420px); max-height:100%; overflow:hidden;
   border:1px solid var(--rule); background:var(--plate); overflow:hidden;
@@ -652,6 +659,30 @@ section[id],main a[id]{scroll-margin-top:84px}
   background:rgba(8,12,14,.6); color:#EEF3F0; padding:4px 8px; border-radius:4px;
   backdrop-filter:blur(6px)}
 .shots.una .shots-count{display:none}
+
+
+/* ═══════════ PLACA DE TÍTULO ═══════════
+   Solo en las dos secciones que abren de verdad. Mucho más sobria que las del
+   gestor: filo metálico, cuatro tornillos y poco más. Sobre una foto grande,
+   el brillo competiría con ella. Los tornillos son degradados radiales, así
+   que no añaden ni un elemento a la página. */
+.placa-titulo{position:relative; display:inline-block; padding:clamp(14px,2vw,20px) clamp(26px,4vw,44px);
+  border-radius:4px;
+  background:
+    radial-gradient(circle at 13px 13px,
+      rgba(200,208,210,.85) 0 1.6px, rgba(60,66,69,.9) 1.6px 3px, rgba(0,0,0,.5) 3px 3.8px, transparent 3.9px),
+    radial-gradient(circle at calc(100% - 13px) 13px,
+      rgba(200,208,210,.85) 0 1.6px, rgba(60,66,69,.9) 1.6px 3px, rgba(0,0,0,.5) 3px 3.8px, transparent 3.9px),
+    radial-gradient(circle at 13px calc(100% - 13px),
+      rgba(200,208,210,.85) 0 1.6px, rgba(60,66,69,.9) 1.6px 3px, rgba(0,0,0,.5) 3px 3.8px, transparent 3.9px),
+    radial-gradient(circle at calc(100% - 13px) calc(100% - 13px),
+      rgba(200,208,210,.85) 0 1.6px, rgba(60,66,69,.9) 1.6px 3px, rgba(0,0,0,.5) 3px 3.8px, transparent 3.9px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0 1px, transparent 1px 3px),
+    linear-gradient(160deg, color-mix(in srgb,var(--ink) 7%,transparent), transparent 62%);
+  border:1px solid var(--rule-2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 10px 26px -22px rgba(0,0,0,.9)}
+.placa-titulo h2{margin:0}
+@media (max-width:600px){ .placa-titulo{padding:13px 20px; display:block} }
 
 /* bolsas */
 .bags{display:grid; gap:clamp(14px,2vw,24px); grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
@@ -760,7 +791,8 @@ a.ct-line:hover .v{color:var(--amber)}
   .fly-stage{position:relative; height:auto; min-height:0; padding-block:64px}
   .manifest .ln{opacity:1 !important; transform:none !important}
   .land-msg{opacity:1 !important; transform:none !important}
-  .fleet-rail{position:relative; transform:none !important; overflow-x:auto; padding-block:40px}
+  .fleet-rail{position:relative; transform:none !important; overflow-x:auto; padding-block:40px;
+    will-change:auto}
   .rv{opacity:1; transform:none}
 }
 </style>
@@ -808,20 +840,24 @@ a.ct-line:hover .v{color:var(--amber)}
 </div>
 
 <!-- ══════════════════ FASE + INTERRUPTOR ══════════════════ -->
-<audio id="cabinaAudio" preload="none" src="audio/cabina.m4a"></audio>
-<button class="snd" id="sndBtn" aria-label="Sonido de cabina" aria-pressed="false">
-  <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path></svg>
-  <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"></path><path d="M22 9l-6 6M16 9l6 6"></path></svg>
-</button>
+<!-- preload="auto": son 108 KB y tiene que estar listo en el instante en que
+     el avion empieza a descender. Con "none" tardaba en entrar la voz. -->
+<audio id="cabinaAudio" preload="auto" src="audio/cabina.m4a"></audio>
 
 <div class="phase">
   <div class="phase-read" aria-hidden="true"><span class="led"></span><span id="phaseVal">En tierra</span></div>
+  <div class="phase-acts">
+  <button class="snd" id="sndBtn" aria-label="Sonido de cabina" aria-pressed="false">
+  <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+  <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>
+</button>
   <div class="guard">
     <a class="guard-sw" href="https://wa.me/34600405655" aria-label="Escribirnos por WhatsApp">
       <svg class="wa" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.47-1.76-1.64-2.06-.17-.3-.02-.46.13-.6.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.47s1.06 2.86 1.21 3.06c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.69.25-1.28.17-1.41-.07-.13-.27-.2-.57-.35zM12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38c1.45.79 3.08 1.21 4.79 1.21h.01c5.46 0 9.91-4.45 9.91-9.91C21.96 6.45 17.5 2 12.04 2z"></path></svg>
       <span>WhatsApp</span>
     </a>
     <span class="guard-cover" aria-hidden="true">Levantar<br>la guarda</span>
+  </div>
   </div>
 </div>
 
@@ -1027,7 +1063,7 @@ a.ct-line:hover .v{color:var(--amber)}
 <section class="sect wrap rv" id="bolsas">
   <div class="sect-head">
     <p class="eyebrow">Serie corta · sí hay repetidas</p>
-    <h2>Bolsas de casco</h2>
+    <span class="placa-titulo"><h2>Bolsas de casco</h2></span>
     <p class="lede">Bolsas de casco militares reales, con parches bordados y etiquetas de servicio. Puedes pedirlas tal cual, con los parches que tú elijas… o <b>lisas y listas para tunearlas tú mismo</b>.</p>
   </div>
   <div class="bags">
@@ -1058,7 +1094,7 @@ a.ct-line:hover .v{color:var(--amber)}
       <div class="layer" style="background:linear-gradient(160deg,var(--panel),var(--ground) 60%)"></div>
       <div class="fleet-head">
         <p class="eyebrow">De dónde sale cada cosa</p>
-        <h2 style="margin-top:12px">El despiece</h2>
+        <span class="placa-titulo"><h2 style="margin-top:12px">El despiece</h2></span>
       </div>
       <div class="fleet-rail" id="fleetRail">
         <article class="fleet-card">
@@ -1379,7 +1415,7 @@ a.ct-line:hover .v{color:var(--amber)}
     /* ACTO 3 · flota */
     var f=progOf(acts["act-fleet"]);
     if(acts["act-fleet"] && rail && !reduced){
-      rail.style.setProperty("--px", (f*railW).toFixed(1));
+      railDestino = f * railW;
       if(f>0&&f<1){ alt=38000; spd=472; phase="Crucero · revisando carga"; roll=lerp(0,-6,Math.sin(f*Math.PI)); }
     }
 
@@ -1387,6 +1423,13 @@ a.ct-line:hover .v{color:var(--amber)}
     var l=progOf(acts["act-land"]);
     if(acts["act-land"]){
       if(l>0){
+        /* El descenso empieza: entra la voz de cabina.
+           OJO: NO se pone el disparador a null aqui. Si el visitante salta de
+           golpe al final, el intento puede fallar (el navegador aun no le ha
+           dado permiso) y dejariamos el audio muerto para siempre. La funcion
+           ya es idempotente: si sono, las siguientes llamadas no hacen nada; y
+           si fallo, lo vuelve a intentar en el siguiente fotograma. */
+        if(l>0.015 && lanzarAudio) lanzarAudio();
         var desc=sub(l,.02,.74), flare=sub(l,.74,.88), down=sub(l,.88,1);
         alt=lerp(38000,0,ease(desc));
         spd=lerp(472,138,ease(desc));
@@ -1436,12 +1479,37 @@ a.ct-line:hover .v{color:var(--amber)}
     if(pfd) pfd.style.setProperty("--pfd-op", flying ? "1" : ".42");
   }
 
+  /* ─────────── barrido del despiece, suavizado ───────────
+     Antes el carril seguía al scroll pixel a pixel, así que cada tirón del dedo
+     se veía tal cual: a trompicones. Ahora el scroll solo marca el DESTINO y
+     este bucle lo persigue acercándose un 14% cada fotograma. El resultado es
+     que el carril "pesa": arranca y frena con inercia, como algo que se mueve
+     de verdad. Y se dibuja con translate3d, que va por tarjeta gráfica. */
+  var railDestino=0, railActual=0, railVivo=false;
+  function moverRail(){
+    if(!rail){ return }
+    var d = railDestino - railActual;
+    if(Math.abs(d) > 0.35){
+      railActual += d * 0.14;
+      rail.style.transform = "translate3d(" + (-railActual).toFixed(2) + "px,0,0)";
+      railVivo = true;
+      requestAnimationFrame(moverRail);
+    } else if(railVivo){
+      railActual = railDestino;
+      rail.style.transform = "translate3d(" + (-railActual).toFixed(2) + "px,0,0)";
+      railVivo = false;
+    } else {
+      railVivo = false;
+    }
+  }
+  function despertarRail(){ if(!railVivo){ railVivo=true; requestAnimationFrame(moverRail) } }
+
   /* ─────────── rAF ─────────── */
   var ticking=false;
   function onScroll(){
     if(ticking) return;
     ticking=true;
-    window.requestAnimationFrame(function(){ render(); ticking=false; });
+    window.requestAnimationFrame(function(){ render(); despertarRail(); ticking=false; });
   }
   window.addEventListener("scroll",onScroll,{passive:true});
 
@@ -1511,13 +1579,17 @@ a.ct-line:hover .v{color:var(--amber)}
   }
   montarCarruseles();
 
+  var lanzarAudio=null;   /* lo rellena el bloque de sonido; lo dispara el vuelo */
+
   /* ─────────── sonido de cabina ───────────
      No suena al entrar: suena al llegar a "Todo empieza con un mensaje", cuando
      el avion ya ha aterrizado. Dos motivos, y los dos buenos:
        1) narrativo: el audio cierra el vuelo justo donde toca hablar
        2) tecnico: ningun navegador deja arrancar un sonido solo, hace falta que
-          el visitante haya tocado o deslizado antes. Al llegar ahi abajo ya lo
-          ha hecho de sobra, asi que el permiso esta dado. */
+          el visitante haya tocado o deslizado antes. Al llegar ahi ya lo ha
+          hecho de sobra, asi que el permiso esta dado.
+     Arranca al empezar el DESCENSO, con el altimetro en 38.000 pies, y suena
+     mientras el avion baja. */
   var audio=document.getElementById("cabinaAudio"), sndBtn=document.getElementById("sndBtn");
   if(audio && sndBtn && root.getAttribute("data-audio")==="on"){
     var mudo=false;
@@ -1533,18 +1605,8 @@ a.ct-line:hover .v{color:var(--amber)}
       lanzado=true;
       audio.play().then(pintarSnd).catch(function(){ lanzado=false });
     }
-    /* el disparador: llegar a la seccion de contacto */
-    var zona=document.getElementById("contacto");
-    if(zona && "IntersectionObserver" in window){
-      var obsAudio=new IntersectionObserver(function(es){
-        es.forEach(function(e){
-          if(e.isIntersecting && e.intersectionRatio>0.22){ arrancar(); obsAudio.disconnect() }
-        });
-      },{threshold:[0,0.22,0.5]});
-      obsAudio.observe(zona);
-    } else {
-      window.addEventListener("scroll", arrancar, {once:true, passive:true});
-    }
+    /* el disparador lo pulsa el propio vuelo, al iniciar el descenso */
+    lanzarAudio = arrancar;
     sndBtn.addEventListener("click", function(e){
       e.stopPropagation();
       mudo=!mudo;
@@ -1588,9 +1650,6 @@ a.ct-line:hover .v{color:var(--amber)}
   measure(); render();
 })();
 </script>
-
-
-
 
 
 

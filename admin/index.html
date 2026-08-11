@@ -136,14 +136,33 @@ textarea{font-family:var(--body); font-size:16.5px; color:inherit}
   background:linear-gradient(180deg,rgba(232,163,61,.1),rgba(232,163,61,.02))}
 .item.dirty .txt span{color:var(--amber)}
 
-.photo{margin-bottom:23px}
+/* ═══ cada foto, montada en su placa ═══
+   Los cuatro tornillos son degradados radiales en las esquinas: ni un solo
+   elemento extra en la pagina. La chapa cepillada son rayas de 1 px. */
+.photo{position:relative; padding:14px; margin-bottom:23px; border-radius:16px;
+  background:
+    radial-gradient(circle at 12px 12px,
+      #99A1A4 0 1.9px, #454B4E 1.9px 3.4px, rgba(0,0,0,.45) 3.4px 4.3px, transparent 4.4px),
+    radial-gradient(circle at calc(100% - 12px) 12px,
+      #99A1A4 0 1.9px, #454B4E 1.9px 3.4px, rgba(0,0,0,.45) 3.4px 4.3px, transparent 4.4px),
+    radial-gradient(circle at 12px calc(100% - 12px),
+      #99A1A4 0 1.9px, #454B4E 1.9px 3.4px, rgba(0,0,0,.45) 3.4px 4.3px, transparent 4.4px),
+    radial-gradient(circle at calc(100% - 12px) calc(100% - 12px),
+      #99A1A4 0 1.9px, #454B4E 1.9px 3.4px, rgba(0,0,0,.45) 3.4px 4.3px, transparent 4.4px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.028) 0 1px, transparent 1px 3px),
+    linear-gradient(158deg,#262B2D 0%,#181D1F 52%,#20252700 52%,#1E2325 100%);
+  border:1px solid rgba(255,255,255,.13);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.15), inset 0 -2px 6px rgba(0,0,0,.5),
+             0 12px 26px -20px rgba(0,0,0,.95)}
 .photo>label{display:block; font-family:var(--mono); font-size:10px; letter-spacing:.19em;
-  text-transform:uppercase; color:var(--amber); margin-bottom:8px}
-.photo .frame{position:relative; border-radius:15px; overflow:hidden; border:1px solid var(--rule-2);
-  background:var(--panel)}
+  text-transform:uppercase; color:#C0C8CA; margin:2px 0 10px; padding-left:16px;
+  text-shadow:0 1px 0 rgba(0,0,0,.7), 0 -1px 0 rgba(255,255,255,.08)}
+.photo .frame{position:relative; border-radius:9px; overflow:hidden;
+  border:1px solid rgba(0,0,0,.6); background:#0A0E0F;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 2px 8px rgba(0,0,0,.7)}
 .photo img{width:100%; aspect-ratio:4/3; object-fit:cover}
 .photo .frame.busy::after{content:''; position:absolute; inset:0; background:rgba(5,9,10,.72)}
-.photo .acts{margin-top:11px}
+.photo .acts{margin-top:12px}
 .badge-new{position:absolute; top:11px; left:11px; z-index:2; background:var(--ok); color:#04361F;
   font-family:var(--mono); font-size:9px; letter-spacing:.15em; text-transform:uppercase;
   padding:5px 10px; border-radius:7px; font-weight:700}
@@ -407,7 +426,7 @@ input[type=file]{display:none}
         <div class="pos"><i>Sí</i><i>No</i></div>
         <div class="texto">
           <b>Sonido de cabina</b>
-          <small id="sndTxt">Apagado. Baja la palanca y sonará tu audio cuando el visitante llegue al final de la web.</small>
+          <small id="sndTxt">Apagado. Baja la palanca y tu audio sonará durante el descenso, desde los 38.000 pies.</small>
         </div>
       </div>
     </div>
@@ -1104,8 +1123,8 @@ function pintarSonidoWeb(){
   c.classList.toggle("on", on);
   if(sw) sw.setAttribute("aria-checked", on?"true":"false");
   if(t) t.textContent = on
-    ? "Encendido. Suena al llegar a «Todo empieza con un mensaje», con el avión ya en tierra."
-    : "Apagado. Baja la palanca y sonará tu audio cuando el visitante llegue al final de la web.";
+    ? "Encendido. Suena al empezar el descenso, con el altímetro en 38.000 pies, y acompaña al avión mientras baja."
+    : "Apagado. Baja la palanca y tu audio sonará durante el descenso, desde los 38.000 pies.";
 }
 function accionarSonido(){
   if(!doc){ toast("Espera a que cargue la web","err"); return }

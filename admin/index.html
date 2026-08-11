@@ -12,37 +12,18 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Flymito">
 <style>
-/* ═══ PIEL DE MARCA (en pruebas) ═══
-   Los colores corporativos tal cual: el gris del logotipo (#808080) sobre el
-   negro del fondo, sin ambar. Se enciende con el interruptor de abajo del todo.
-   Los tres grises se derivan del mismo tono para que no chirrie: uno mas claro
-   para leer comodo, el del logo para los acentos y uno mas apagado para lo
-   secundario. Las luces de estado siguen en color: son informacion, no adorno. */
-:root[data-piel="corp"]{
-  --amber:#9A9A9A; --amber-2:#B4B4B4; --amber-dim:#4A4A4A;
-  --ink:#C2C2C2; --ink-2:#8C8C8C; --ink-3:#5E5E5E;
-  --rule:rgba(200,200,200,.12); --rule-2:rgba(200,200,200,.26);
-}
-:root[data-piel="corp"] .amb::before{
-  background:
-    radial-gradient(46% 38% at 18% 8%, rgba(150,150,150,.13), transparent 62%),
-    radial-gradient(40% 34% at 88% 24%, rgba(120,120,120,.10), transparent 64%),
-    radial-gradient(50% 40% at 50% 104%, rgba(90,90,90,.10), transparent 66%);
-}
-:root[data-piel="corp"] .btn{
-  background:linear-gradient(180deg,#B4B4B4,#808080); color:#0A0D0E;
-  box-shadow:0 12px 26px -14px rgba(160,160,160,.6), inset 0 1px 0 rgba(255,255,255,.4);
-}
-:root[data-piel="corp"] .gate .lg{filter:drop-shadow(0 0 34px rgba(160,160,160,.28))}
-:root[data-piel="corp"] .addbtn{background:rgba(160,160,160,.05); border-color:#4A4A4A; color:#9A9A9A}
-:root[data-piel="corp"] .anun .luz.aviso{background:#C2C2C2; box-shadow:0 0 11px rgba(194,194,194,.8)}
 
 :root{
   --bg:#05090A; --panel:#0E1516; --panel-2:#151E20;
-  --ink:#E8EDEA; --ink-2:#9DA9A5; --ink-3:#66716D;
-  --amber:#E8A33D; --amber-2:#F5C378; --amber-dim:#6E4E18;
+  /* Colores corporativos: el gris del logotipo (#808080) sobre el negro del
+     fondo. Tres tonos del mismo gris — uno mas claro para leer comodo, el del
+     logo para los acentos y uno apagado para lo secundario.
+     Las luces de estado (verde/rojo) siguen en color: ahi el color es
+     informacion, no adorno. */
+  --ink:#C2C2C2; --ink-2:#8C8C8C; --ink-3:#5E5E5E;
+  --amber:#9A9A9A; --amber-2:#B4B4B4; --amber-dim:#4A4A4A;
   --rbf:#D8402A; --ok:#4FD08A;
-  --rule:rgba(232,237,234,.12); --rule-2:rgba(232,237,234,.26);
+  --rule:rgba(200,200,200,.12); --rule-2:rgba(200,200,200,.26);
   --body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   --display:'Helvetica Neue',Helvetica,'Arial Narrow',Arial,sans-serif;
   --mono:ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,monospace;
@@ -79,7 +60,9 @@ textarea{font-family:var(--body); font-size:16.5px; color:inherit}
   backdrop-filter:blur(20px) saturate(1.2); border-bottom:1px solid var(--rule)}
 .bar::after{content:''; position:absolute; left:0; right:0; bottom:-1px; height:1px;
   background:linear-gradient(90deg,transparent,var(--amber-dim) 22%,var(--amber-dim) 78%,transparent)}
-.bar .logo{height:17px; width:auto; flex:0 0 auto; opacity:.95}
+/* el recorte del logotipo es blanco con transparencia; bajando el brillo a la
+   mitad vuelve exactamente a su gris original (#808080) */
+.bar .logo{height:17px; width:auto; flex:0 0 auto; filter:brightness(.66)}
 .bar h1{margin:0; font-family:var(--display); font-weight:800; font-stretch:condensed;
   text-transform:uppercase; font-size:16px; flex:1; min-width:0;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
@@ -92,7 +75,8 @@ textarea{font-family:var(--body); font-size:16.5px; color:inherit}
 .gate{position:relative; z-index:1; min-height:100svh; display:flex; flex-direction:column;
   align-items:center; justify-content:center; text-align:center;
   padding:calc(34px + var(--st)) 26px calc(34px + var(--sb))}
-.gate .lg{width:min(62vw,250px); margin-bottom:14px; filter:drop-shadow(0 0 34px rgba(232,163,61,.3))}
+.gate .lg{width:min(62vw,250px); margin-bottom:14px;
+  filter:brightness(.62) drop-shadow(0 0 34px rgba(170,170,170,.26))}
 .gate .kicker{font-family:var(--mono); font-size:10.5px; letter-spacing:.42em; text-transform:uppercase;
   color:var(--amber); margin:0 0 30px; padding-left:.42em}
 .gate .msg{color:var(--ink-2); max-width:32ch; font-size:15.5px; margin:0 0 24px}
@@ -293,8 +277,8 @@ input[type=file]{display:none}
 /* ── cabecera con luz de panel ── */
 .bar{background-image:linear-gradient(180deg,rgba(232,163,61,.05),transparent 60%)}
 .gate .lg{animation:latir 6s ease-in-out infinite}
-@keyframes latir{0%,100%{filter:drop-shadow(0 0 34px rgba(232,163,61,.30))}
-                 50%{filter:drop-shadow(0 0 48px rgba(232,163,61,.48))}}
+@keyframes latir{0%,100%{filter:brightness(.62) drop-shadow(0 0 34px rgba(170,170,170,.26))}
+                 50%{filter:brightness(.70) drop-shadow(0 0 48px rgba(190,190,190,.40))}}
 @media (prefers-reduced-motion:reduce){
   .publish .btn::after,.gate .lg,.anun .luz.aviso{animation:none}
 }
@@ -357,7 +341,6 @@ input[type=file]{display:none}
       <button class="btn ghost" id="btnVer">Ver la web</button>
       <button class="btn ghost" id="btnHist">Deshacer</button>
     </div>
-    <button class="btn ghost" id="btnPiel" style="margin-top:10px">Probar colores de marca</button>
     <div style="text-align:center"><button class="link" id="btnOut">Cerrar sesión</button></div>
   </div>
 </section>
@@ -1021,23 +1004,6 @@ $("#btnVer").onclick=function(){ window.open("/","_blank") };
 $("#btnHist").onclick=historial;
 $("#btnAdd").onclick=addPieza;
 $("#btnPub").onclick=publicar;
-/* ── interruptor de piel (en pruebas) ── */
-var LS_PIEL="fly_piel";
-function pintarPiel(){
-  var corp = null;
-  try{ corp = localStorage.getItem(LS_PIEL)==="corp" }catch(e){}
-  document.documentElement.setAttribute("data-piel", corp?"corp":"");
-  var b=$("#btnPiel");
-  if(b) b.textContent = corp ? "Volver a los colores de ahora" : "Probar colores de marca";
-}
-$("#btnPiel").onclick=function(){
-  var corp=document.documentElement.getAttribute("data-piel")==="corp";
-  try{ localStorage.setItem(LS_PIEL, corp?"":"corp") }catch(e){}
-  pintarPiel();
-  toast(corp ? "Colores de siempre" : "Colores de marca: el gris del logotipo");
-};
-pintarPiel();
-
 $("#btnOut").onclick=function(){
   if(nCambios()&&!confirm("Tienes cambios sin publicar. ¿Sales igualmente?")) return;
   try{ localStorage.removeItem(LS_CRED) }catch(e){}

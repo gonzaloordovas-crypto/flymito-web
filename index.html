@@ -500,10 +500,11 @@ section[id],main a[id]{scroll-margin-top:84px}
 .fleet-rail{position:absolute; top:clamp(150px,21vh,210px); bottom:0; left:0; display:flex; align-items:center;
   gap:clamp(18px,3vw,44px); padding-inline:8vw; will-change:transform;
   transform:translateX(calc(var(--px,0) * -1px))}
-.fleet-card{flex:0 0 auto; width:min(78vw,420px);
+/* acotar el alto: si no, tapan la cabecera */
+.fleet-card{flex:0 0 auto; width:min(78vw,420px); max-height:100%; overflow:hidden;
   border:1px solid var(--rule); background:var(--plate); overflow:hidden;
   display:flex; flex-direction:column}
-.fleet-card img{width:100%; aspect-ratio:4/3; object-fit:cover}
+.fleet-card img{width:100%; flex:0 0 auto; height:clamp(130px,24vh,240px); object-fit:cover}
 .fleet-body{padding:20px 22px 24px; display:flex; flex-direction:column; gap:9px}
 .fleet-tail{font-family:var(--mono); font-size:9.5px; letter-spacing:.22em;
   text-transform:uppercase; color:var(--amber)}
@@ -564,6 +565,46 @@ section[id],main a[id]{scroll-margin-top:84px}
 .spec .row{display:flex; align-items:baseline; gap:7px}
 .spec .k{color:var(--ink-3)} .spec .v{color:var(--ink-2); text-align:right}
 .spec .dots{flex:1; border-bottom:1px dotted var(--rule-2); transform:translateY(-3px)}
+
+
+/* ═══════════ CARRUSEL DE FOTOS DE UNA PIEZA ═══════════
+   Anclaje de desplazamiento NATIVO: en el movil se desliza con el dedo y el
+   navegador se encarga del rebote y la inercia. El JS solo pinta los puntitos. */
+.piece figure.shots{position:relative; overflow:hidden}
+.shots-track{display:flex; overflow-x:auto; scroll-snap-type:x mandatory;
+  scroll-behavior:smooth; scrollbar-width:none; -ms-overflow-style:none;
+  overscroll-behavior-x:contain}
+.shots-track::-webkit-scrollbar{display:none}
+.shots-track img{flex:0 0 100%; width:100%; scroll-snap-align:center; scroll-snap-stop:always}
+/* con una sola foto no hay nada que deslizar */
+.shots.una .shots-track{overflow-x:hidden}
+.shots.una .shots-dots,.shots.una .shots-nav{display:none}
+
+.shots-dots{position:absolute; left:0; right:0; bottom:11px; z-index:3;
+  display:flex; justify-content:center; gap:6px; pointer-events:none}
+.shots-dots i{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.45);
+  box-shadow:0 1px 3px rgba(0,0,0,.6); transition:width .3s ease, background .3s ease}
+.shots-dots i.on{width:18px; border-radius:99px; background:var(--amber)}
+
+.shots-nav{position:absolute; top:50%; z-index:3; width:38px; height:38px; border-radius:50%;
+  transform:translateY(-50%); display:grid; place-items:center; cursor:pointer;
+  border:1px solid rgba(255,255,255,.22); background:rgba(8,12,14,.55); color:#fff;
+  backdrop-filter:blur(6px); opacity:0; transition:opacity .25s ease, background .25s ease}
+.shots-nav svg{width:17px; height:17px}
+.shots-nav.prev{left:10px} .shots-nav.next{right:10px}
+.shots-nav:hover{background:var(--amber); color:#12181A; border-color:transparent}
+.piece:hover .shots-nav{opacity:1}
+.shots-nav:focus-visible{opacity:1}
+/* en tactil no hay "pasar por encima": se desliza y punto */
+@media (hover:none){ .shots-nav{display:none} }
+/* el zoom al pasar por encima estorba al deslizar */
+.piece:hover figure.shots img{transform:none}
+/* contador discreto arriba a la derecha */
+.shots-count{position:absolute; top:11px; right:11px; z-index:3;
+  font-family:var(--mono); font-size:9px; letter-spacing:.14em;
+  background:rgba(8,12,14,.6); color:#EEF3F0; padding:4px 8px; border-radius:4px;
+  backdrop-filter:blur(6px)}
+.shots.una .shots-count{display:none}
 
 /* bolsas */
 .bags{display:grid; gap:clamp(14px,2vw,24px); grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
@@ -823,7 +864,7 @@ a.ct-line:hover .v{color:var(--amber)}
 
   <div class="pieces">
     <article class="piece wide">
-      <figure><span class="stamp" data-e="pieza1_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 1">Terminado</span><img data-i="pieza1_foto" data-l="Foto de la pieza" data-g="Pieza 1" src="img/u05.webp" alt="Asiento eyectable restaurado, con tapicería de cuero rojo y estructura de aluminio pulido"></figure>
+      <figure class="shots"><span class="stamp" data-e="pieza1_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 1">Terminado</span><div class="shots-track"><img data-i="pieza1_foto" data-l="Foto de la pieza" data-g="Pieza 1" src="img/u05.webp" alt="Asiento eyectable restaurado, con tapicería de cuero rojo y estructura de aluminio pulido"></div><div class="shots-dots" aria-hidden="true"></div><button class="shots-nav prev" type="button" aria-label="Foto anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button class="shots-nav next" type="button" aria-label="Foto siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></figure>
       <div class="piece-body">
         <h3 data-e="pieza1_titulo" data-l="Nombre de la pieza" data-g="Pieza 1">Asiento eyectable restaurado</h3>
         <p class="desc" data-e="pieza1_desc" data-l="Descripción" data-g="Pieza 1">La pieza más rotunda del taller. Estructura devuelta a su brillo original, mecanismos a la vista y tapicería rehecha en cuero rojo. Se sostiene de pie, se sienta de verdad y no hay forma de que pase desapercibida.</p>
@@ -836,7 +877,7 @@ a.ct-line:hover .v{color:var(--amber)}
     </article>
 
     <article class="piece">
-      <figure><span class="stamp" data-e="pieza2_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 2">Terminado</span><img data-i="pieza2_foto" data-l="Foto de la pieza" data-g="Pieza 2" src="img/pieza2_foto-1786484858269.webp" alt="Trolley de avión convertido en mueble con tapa de madera maciza"></figure>
+      <figure class="shots"><span class="stamp" data-e="pieza2_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 2">Terminado</span><div class="shots-track"><img data-i="pieza2_foto" data-l="Foto de la pieza" data-g="Pieza 2" src="img/pieza2_foto-1786484858269.webp" alt="Trolley de avión convertido en mueble con tapa de madera maciza"></div><div class="shots-dots" aria-hidden="true"></div><button class="shots-nav prev" type="button" aria-label="Foto anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button class="shots-nav next" type="button" aria-label="Foto siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></figure>
       <div class="piece-body">
         <h3 data-e="pieza2_titulo" data-l="Nombre de la pieza" data-g="Pieza 2">Trolley convertido en minibar</h3>
         <p class="desc" data-e="pieza2_desc" data-l="Descripción" data-g="Pieza 2">Un trolley de servicio de a bordo, pulido y rematado con tapa de madera maciza. Mueble bar, mesa auxiliar y conversación garantizada con cualquiera que entre por la puerta.</p>
@@ -849,7 +890,7 @@ a.ct-line:hover .v{color:var(--amber)}
     </article>
 
     <article class="piece">
-      <figure><span class="stamp" data-e="pieza3_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 3">Terminado</span><img data-i="pieza3_foto" data-l="Foto de la pieza" data-g="Pieza 3" src="img/pieza3_foto-1786486489872.jpg" alt="Panel de control de cabina expuesto dentro de una urna de metacrilato"></figure>
+      <figure class="shots"><span class="stamp" data-e="pieza3_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 3">Terminado</span><div class="shots-track"><img data-i="pieza3_foto" data-l="Foto de la pieza" data-g="Pieza 3" src="img/pieza3_foto-1786486489872.jpg" alt="Panel de control de cabina expuesto dentro de una urna de metacrilato"></div><div class="shots-dots" aria-hidden="true"></div><button class="shots-nav prev" type="button" aria-label="Foto anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button class="shots-nav next" type="button" aria-label="Foto siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></figure>
       <div class="piece-body">
         <h3 data-e="pieza3_titulo" data-l="Nombre de la pieza" data-g="Pieza 3">Horizonte standby de Md-88</h3>
         <p class="desc" data-e="pieza3_desc" data-l="Descripción" data-g="Pieza 3">Un horizonte real, 40 años de servicio. Historia viva en montaje de acero pulido. Espectacular para poner en cualquier rincón especial de la casa u oficina</p>
@@ -862,7 +903,7 @@ a.ct-line:hover .v{color:var(--amber)}
     </article>
 
     <article class="piece">
-      <figure><span class="stamp" data-e="pieza4_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 4">Terminado</span><img data-i="pieza4_foto" data-l="Foto de la pieza" data-g="Pieza 4" src="img/u09.webp" alt="Hélice de madera laminada con su emblema y un pistón de motor radial pulido"></figure>
+      <figure class="shots"><span class="stamp" data-e="pieza4_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 4">Terminado</span><div class="shots-track"><img data-i="pieza4_foto" data-l="Foto de la pieza" data-g="Pieza 4" src="img/u09.webp" alt="Hélice de madera laminada con su emblema y un pistón de motor radial pulido"></div><div class="shots-dots" aria-hidden="true"></div><button class="shots-nav prev" type="button" aria-label="Foto anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button class="shots-nav next" type="button" aria-label="Foto siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></figure>
       <div class="piece-body">
         <h3 data-e="pieza4_titulo" data-l="Nombre de la pieza" data-g="Pieza 4">Hélice de madera y pistón radial</h3>
         <p class="desc" data-e="pieza4_desc" data-l="Descripción" data-g="Pieza 4">Hélice de laminado de madera con su emblema todavía visible, y un pistón de motor radial pulido a mano. Dos objetos que cuentan un siglo de aviación sin decir una palabra.</p>
@@ -875,7 +916,7 @@ a.ct-line:hover .v{color:var(--amber)}
     </article>
 
     <article class="piece">
-      <figure><span class="stamp" data-e="pieza5_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 5">Terminado</span><img data-i="pieza5_foto" data-l="Foto de la pieza" data-g="Pieza 5" src="img/u10.webp" alt="Compuerta de carga pulida a espejo reflejando el cielo"></figure>
+      <figure class="shots"><span class="stamp" data-e="pieza5_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 5">Terminado</span><div class="shots-track"><img data-i="pieza5_foto" data-l="Foto de la pieza" data-g="Pieza 5" src="img/u10.webp" alt="Compuerta de carga pulida a espejo reflejando el cielo"></div><div class="shots-dots" aria-hidden="true"></div><button class="shots-nav prev" type="button" aria-label="Foto anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button class="shots-nav next" type="button" aria-label="Foto siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></figure>
       <div class="piece-body">
         <h3 data-e="pieza5_titulo" data-l="Nombre de la pieza" data-g="Pieza 5">Compuerta de carga pulida</h3>
         <p class="desc" data-e="pieza5_desc" data-l="Descripción" data-g="Pieza 5">Una compuerta de la bodega de carga, con sus remaches originales, pulida hasta reflejar el cielo. Se cuelga como un cuadro y cambia con la luz de cada hora del día.</p>
@@ -888,7 +929,7 @@ a.ct-line:hover .v{color:var(--amber)}
     </article>
 
     <article class="piece">
-      <figure><span class="stamp alt-stamp" data-e="pieza6_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 6">En proceso</span><img data-i="pieza6_foto" data-l="Foto de la pieza" data-g="Pieza 6" src="img/u11.webp" alt="Estructura de dos butacas de pasaje desnudas, listas para tapizar"></figure>
+      <figure class="shots"><span class="stamp alt-stamp" data-e="pieza6_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 6">En proceso</span><div class="shots-track"><img data-i="pieza6_foto" data-l="Foto de la pieza" data-g="Pieza 6" src="img/u11.webp" alt="Estructura de dos butacas de pasaje desnudas, listas para tapizar"></div><div class="shots-dots" aria-hidden="true"></div><button class="shots-nav prev" type="button" aria-label="Foto anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button class="shots-nav next" type="button" aria-label="Foto siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></figure>
       <div class="piece-body">
         <h3 data-e="pieza6_titulo" data-l="Nombre de la pieza" data-g="Pieza 6">Butacas de pasaje</h3>
         <p class="desc" data-e="pieza6_desc" data-l="Descripción" data-g="Pieza 6">Doble asiento de cabina desnudo, listo para tapizar. Tú eliges el cuero y el acabado del metal; nosotros lo dejamos como salió de fábrica —o mejor.</p>
@@ -901,7 +942,7 @@ a.ct-line:hover .v{color:var(--amber)}
     </article>
 
     <article class="piece">
-      <figure><span class="stamp" data-e="pieza7_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 7">Terminado</span><img data-i="pieza7_foto" data-l="Foto de la pieza" data-g="Pieza 7" src="img/u12.webp" alt="Estantería hecha con compuertas de tren de aterrizaje, con instrumentos de vuelo y una caja negra Flight Data Recorder naranja"></figure>
+      <figure class="shots"><span class="stamp" data-e="pieza7_sello" data-l="Etiqueta (Terminado / En proceso…)" data-g="Pieza 7">Terminado</span><div class="shots-track"><img data-i="pieza7_foto" data-l="Foto de la pieza" data-g="Pieza 7" src="img/u12.webp" alt="Estantería hecha con compuertas de tren de aterrizaje, con instrumentos de vuelo y una caja negra Flight Data Recorder naranja"></div><div class="shots-dots" aria-hidden="true"></div><button class="shots-nav prev" type="button" aria-label="Foto anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><button class="shots-nav next" type="button" aria-label="Foto siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button></figure>
       <div class="piece-body">
         <h3 data-e="pieza7_titulo" data-l="Nombre de la pieza" data-g="Pieza 7">Estantería de compuertas de tren</h3>
         <p class="desc" data-e="pieza7_desc" data-l="Descripción" data-g="Pieza 7">Las compuertas del tren de aterrizaje de un 727, convertidas en estantería. Encima, material de vuelo auténtico —incluida una Flight Data Recorder en su naranja reglamentario—. Piezas de museo que aquí sí se pueden tocar.</p>
@@ -1369,6 +1410,53 @@ a.ct-line:hover .v{color:var(--amber)}
   window.addEventListener("orientationchange",function(){
     setTimeout(function(){ lastW = window.innerWidth; measure(); onScroll(); },250);
   });
+
+
+  /* ─────────── carrusel de fotos de cada pieza ───────────
+     El deslizamiento lo hace el navegador (scroll-snap). Aqui solo se pintan
+     los puntitos, el contador y se mueven las flechas del escritorio. */
+  function montarCarruseles(){
+    document.querySelectorAll("figure.shots").forEach(function(fig){
+      var track=fig.querySelector(".shots-track");
+      var imgs=track ? track.querySelectorAll("img") : [];
+      var dots=fig.querySelector(".shots-dots");
+      if(!track || !dots) return;
+      fig.classList.toggle("una", imgs.length<2);
+      if(imgs.length<2){ dots.innerHTML=""; return; }
+
+      if(!fig.querySelector(".shots-count")){
+        var c=document.createElement("span"); c.className="shots-count"; fig.appendChild(c);
+      }
+      var cont=fig.querySelector(".shots-count");
+      dots.innerHTML="";
+      for(var i=0;i<imgs.length;i++) dots.appendChild(document.createElement("i"));
+      var puntos=dots.querySelectorAll("i");
+
+      function activo(){
+        var i=Math.round(track.scrollLeft/Math.max(1,track.clientWidth));
+        return Math.max(0, Math.min(imgs.length-1, i));
+      }
+      function pintar(){
+        var i=activo();
+        for(var k=0;k<puntos.length;k++) puntos[k].classList.toggle("on", k===i);
+        cont.textContent=(i+1)+" / "+imgs.length;
+      }
+      var t=null;
+      track.addEventListener("scroll",function(){
+        if(t) return;
+        t=requestAnimationFrame(function(){ t=null; pintar() });
+      },{passive:true});
+      fig.querySelectorAll(".shots-nav").forEach(function(b){
+        b.addEventListener("click",function(e){
+          e.preventDefault();
+          var d=b.classList.contains("next")?1:-1;
+          track.scrollTo({left:(activo()+d)*track.clientWidth, behavior:"smooth"});
+        });
+      });
+      pintar();
+    });
+  }
+  montarCarruseles();
 
   /* ─────────── reveals ─────────── */
   if("IntersectionObserver" in window){

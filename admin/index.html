@@ -422,7 +422,7 @@ function boot(){
 }
 function login(){
   $("#gateMsg").textContent="Entra con tu usuario y tu contraseña.";
-  gateBody('<form id="fLogin" style="width:100%"><div class="f" style="margin-bottom:12px"><label for="lu">Usuario</label>'+
+  gateBody('<form id="fLogin" style="width:100%"><div class="f" style="margin-bottom:12px"><label for="lu">Usuario &mdash; es &laquo;'+(acceso.user||'fly')+'&raquo;</label>'+
     '<input type="text" id="lu" autocomplete="username" autocapitalize="off" spellcheck="false" value="'+(acceso.user||"")+'"></div>'+
     '<div class="f" style="margin-bottom:16px"><label for="lp">Contraseña</label>'+
     '<input type="password" id="lp" autocomplete="current-password"></div>'+
@@ -435,6 +435,12 @@ function login(){
     if(!seguro){ toast("Hace falta el candado (https)","err"); return }
     var u=$("#lu").value, p=$("#lp").value;
     if(!p){ toast("Escribe la contraseña","err"); return }
+    /* El usuario entra en el cifrado: si no es el mismo, no descifra aunque la
+       contraseña sea buena. Mejor decirlo que soltar un "incorrectos" a secas. */
+    if(acceso && acceso.user && u.toLowerCase().trim()!==acceso.user){
+      toast('El usuario no es ese. Aquí va: "'+acceso.user+'"',"err");
+      $("#lu").value=acceso.user; $("#lp").focus(); return;
+    }
     working(true,"Comprobando","Un momento");
     descifrar(acceso,u,p).then(function(tok){
       TOKEN=tok;
@@ -446,7 +452,10 @@ function login(){
         $("#gAlta").onclick=function(){ faceAlta().then(function(){toast("Face ID activado","ok");entrar()}).catch(entrar) };
         $("#gNo").onclick=entrar;
       } else entrar();
-    }).catch(function(){ working(false); toast("Usuario o contraseña incorrectos","err") });
+    }).catch(function(){
+      working(false);
+      toast("Contraseña incorrecta. El usuario es \u00ab"+((acceso&&acceso.user)||"fly")+"\u00bb.","err");
+    });
   };
 }
 function prepararSetup(){
@@ -532,7 +541,8 @@ function pintarHome(){
     var b=document.createElement("button"); b.className="item"+(sucio(g)?" dirty":"");
     var nT=g.fields.filter(function(e){return e.hasAttribute("data-e")}).length;
     var nF=g.fields.filter(function(e){return e.hasAttribute("data-i")}).length;
-    var p=[]; if(nT)p.push(nT+(nT===1?" texto":" textos")); if(nF)p.push(nF+(nF===1?" foto":" fotos"));
+    var p=[]; if(nT)p.push(nT+(nT===1?" texto":" textos"));
+    if(nF)p.push(nF+(nF===1?" foto":" fotos")+(nF>1?" \u00b7 carrusel":""));
     b.innerHTML=(g.thumb?'<img class="thumb" src="'+ruta(g.thumb)+'" alt="" loading="lazy">':'<span class="thumb ph">Aa</span>')+
       '<span class="txt"><b></b><span>'+(sucio(g)?"● Sin publicar":p.join(" · "))+'</span></span>'+
       '<span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>';
@@ -567,6 +577,15 @@ function abrir(idx){
       var inp=w.querySelector("input[type=file]");
       w.querySelector("button").onclick=function(){ inp.click() };
       inp.onchange=function(){ if(inp.files&&inp.files[0]) elegirFoto(key,inp.files[0],w) };
+      /* si la pieza lleva varias fotos, cada una se puede quitar del carrusel */
+      var _art=articuloDe(g), _tr=_art?_art.querySelector(".shots-track"):null;
+      if(_tr && _tr.querySelectorAll("img").length>1 && _tr.querySelector('[data-i="'+key+'"]')){
+        var _q=document.createElement("button");
+        _q.className="link"; _q.type="button"; _q.style.cssText="display:block;margin:4px auto 0";
+        _q.textContent="Quitar esta foto del carrusel";
+        (function(k){ _q.onclick=function(){ quitarFoto(current,k) } })(key);
+        w.appendChild(_q);
+      }
       B.appendChild(w);
     } else {
       var k=el.getAttribute("data-e");
@@ -586,6 +605,11 @@ function abrir(idx){
     }
   });
   if(articuloDe(g)){
+    var add=document.createElement("button");
+    add.className="addbtn"; add.type="button"; add.style.marginTop="4px";
+    add.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>A\u00f1adir otra foto a esta pieza';
+    add.onclick=function(){ addFoto(current) };
+    B.appendChild(add);
     var s=document.createElement("div"); s.className="sep"; B.appendChild(s);
     var r=document.createElement("div"); r.className="rowbtns";
     r.innerHTML='<button class="btn ghost" type="button">↑ Subir</button><button class="btn ghost" type="button">↓ Bajar</button>';
@@ -667,6 +691,40 @@ function addPieza(){
   var idx=-1; for(var i=0;i<groups.length;i++) if(groups[i].sub===G) idx=i;
   pintarHome(); if(idx>=0) abrir(idx);
   toast("Pieza creada. Ponle nombre y foto.","ok");
+}
+function addFoto(idx){
+  var g=groups[idx], a=articuloDe(g);
+  if(!a){ toast("Aqui no se pueden anadir fotos","err"); return }
+  var track=a.querySelector(".shots-track");
+  if(!track){ toast("Esta pieza aun no tiene carrusel","err"); return }
+  var prim=g.fields.filter(function(e){return e.hasAttribute("data-i")})[0];
+  var raiz=(prim?prim.getAttribute("data-i"):"foto").replace(/_foto\d*$/,"");
+  var n=track.querySelectorAll("img").length+1;
+  var img=doc.createElement("img");
+  img.setAttribute("data-i", raiz+"_foto"+n);
+  img.setAttribute("data-l", "Foto "+n+" de la pieza");
+  img.setAttribute("data-g", g.sub);
+  img.setAttribute("src","img/placeholder.webp");
+  img.setAttribute("alt","");
+  track.appendChild(img);
+  structural++; construir();
+  var i=-1; for(var k=0;k<groups.length;k++) if(groups[k].sub===g.sub) i=k;
+  abrir(i>=0?i:idx);
+  toast("Foto "+n+" anadida. Ahora cambiala por la tuya.","ok");
+}
+function quitarFoto(idx,key){
+  var g=groups[idx], a=articuloDe(g); if(!a) return;
+  var track=a.querySelector(".shots-track");
+  if(!track || track.querySelectorAll("img").length<2){
+    toast("Una pieza necesita al menos una foto","err"); return;
+  }
+  var img=track.querySelector('[data-i="'+key+'"]'); if(!img) return;
+  if(!confirm("\u00bfQuitar esta foto de la pieza?")) return;
+  delete newImages[key];
+  img.parentNode.removeChild(img);
+  structural++; construir();
+  var i=-1; for(var k=0;k<groups.length;k++) if(groups[k].sub===g.sub) i=k;
+  abrir(i>=0?i:idx); toast("Foto quitada");
 }
 function borrar(idx){
   var g=groups[idx], a=articuloDe(g); if(!a) return;

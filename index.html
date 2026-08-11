@@ -407,11 +407,12 @@ section[id],main a[id]{scroll-margin-top:84px}
   .guard-sw{
     position:relative; inset:auto; display:grid; place-items:center;
     width:56px; height:56px; padding:0; border-radius:50%; border-color:transparent;
-    background:linear-gradient(180deg,#E9553D,var(--rbf)); color:#fff;
+    /* verde de WhatsApp: se reconoce sin leer nada */
+    background:linear-gradient(180deg,#3BE07C,#1FAE55); color:#04331B;
     box-shadow:0 12px 28px -10px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.3);
     letter-spacing:.14em;
   }
-  .guard-sw:hover,.guard-sw:active{background:linear-gradient(180deg,var(--rbf),#8F2314); color:#fff}
+  .guard-sw:hover,.guard-sw:active{background:linear-gradient(180deg,#1FAE55,#12833E); color:#fff}
   .guard-sw span{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
   .guard-sw .wa{width:26px; height:26px}
 }
@@ -576,6 +577,16 @@ section[id],main a[id]{scroll-margin-top:84px}
   overscroll-behavior-x:contain}
 .shots-track::-webkit-scrollbar{display:none}
 .shots-track img{flex:0 0 100%; width:100%; scroll-snap-align:center; scroll-snap-stop:always}
+/* Las fotos de movil llegan en vertical y en horizontal. Recortarlas a 4:3
+   dejaba fuera media pieza. Ahora se ven ENTERAS, centradas sobre una copia
+   desenfocada de si mismas: ni recorte ni franjas negras. */
+.shots-slide{position:relative; flex:0 0 100%; aspect-ratio:4/3; overflow:hidden;
+  scroll-snap-align:center; scroll-snap-stop:always; display:grid; place-items:center}
+.shots-slide .fondo{position:absolute; inset:-10%; background-position:center;
+  background-size:cover; filter:blur(26px) saturate(1.15) brightness(.42)}
+.piece figure .shots-slide img,.shots-track .shots-slide img{
+  position:relative; z-index:1; width:100%; height:100%;
+  aspect-ratio:auto; object-fit:contain; transform:none}
 /* con una sola foto no hay nada que deslizar */
 .shots.una .shots-track{overflow-x:hidden}
 .shots.una .shots-dots,.shots.una .shots-nav{display:none}
@@ -850,7 +861,7 @@ a.ct-line:hover .v{color:var(--amber)}
     <div><b>2016</b><span>Trabajando<br>desde entonces</span></div>
     <div><b>6</b><span>Modelos de avión<br>que despiezamos</span></div>
     <div><b>100 %</b><span>Por encargo<br>ninguna igual a otra</span></div>
-    <div><b>Mundo</b><span>Enviamos<br>a donde haga falta</span></div>
+    <div><b>Envíos</b><span>Enviamos<br>a donde haga falta</span></div>
   </div>
 </section>
 
@@ -1421,6 +1432,17 @@ a.ct-line:hover .v{color:var(--amber)}
       var imgs=track ? track.querySelectorAll("img") : [];
       var dots=fig.querySelector(".shots-dots");
       if(!track || !dots) return;
+      /* cada foto se envuelve con su propio fondo desenfocado. Solo en pantalla:
+         el HTML guardado sigue llevando <img> a secas, para que el gestor lo lea */
+      track.querySelectorAll("img").forEach(function(im){
+        if(im.parentNode.classList.contains("shots-slide")) return;
+        var sl=document.createElement("div"); sl.className="shots-slide";
+        var bg=document.createElement("span"); bg.className="fondo";
+        var pon=function(){ bg.style.backgroundImage='url("'+(im.currentSrc||im.src)+'")' };
+        im.complete ? pon() : im.addEventListener("load",pon,{once:true});
+        im.parentNode.insertBefore(sl,im); sl.appendChild(bg); sl.appendChild(im);
+      });
+      imgs=track.querySelectorAll("img");
       fig.classList.toggle("una", imgs.length<2);
       if(imgs.length<2){ dots.innerHTML=""; return; }
 

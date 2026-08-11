@@ -12,6 +12,31 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Flymito">
 <style>
+/* ═══ PIEL DE MARCA (en pruebas) ═══
+   Los colores corporativos tal cual: el gris del logotipo (#808080) sobre el
+   negro del fondo, sin ambar. Se enciende con el interruptor de abajo del todo.
+   Los tres grises se derivan del mismo tono para que no chirrie: uno mas claro
+   para leer comodo, el del logo para los acentos y uno mas apagado para lo
+   secundario. Las luces de estado siguen en color: son informacion, no adorno. */
+:root[data-piel="corp"]{
+  --amber:#9A9A9A; --amber-2:#B4B4B4; --amber-dim:#4A4A4A;
+  --ink:#C2C2C2; --ink-2:#8C8C8C; --ink-3:#5E5E5E;
+  --rule:rgba(200,200,200,.12); --rule-2:rgba(200,200,200,.26);
+}
+:root[data-piel="corp"] .amb::before{
+  background:
+    radial-gradient(46% 38% at 18% 8%, rgba(150,150,150,.13), transparent 62%),
+    radial-gradient(40% 34% at 88% 24%, rgba(120,120,120,.10), transparent 64%),
+    radial-gradient(50% 40% at 50% 104%, rgba(90,90,90,.10), transparent 66%);
+}
+:root[data-piel="corp"] .btn{
+  background:linear-gradient(180deg,#B4B4B4,#808080); color:#0A0D0E;
+  box-shadow:0 12px 26px -14px rgba(160,160,160,.6), inset 0 1px 0 rgba(255,255,255,.4);
+}
+:root[data-piel="corp"] .gate .lg{filter:drop-shadow(0 0 34px rgba(160,160,160,.28))}
+:root[data-piel="corp"] .addbtn{background:rgba(160,160,160,.05); border-color:#4A4A4A; color:#9A9A9A}
+:root[data-piel="corp"] .anun .luz.aviso{background:#C2C2C2; box-shadow:0 0 11px rgba(194,194,194,.8)}
+
 :root{
   --bg:#05090A; --panel:#0E1516; --panel-2:#151E20;
   --ink:#E8EDEA; --ink-2:#9DA9A5; --ink-3:#66716D;
@@ -332,6 +357,7 @@ input[type=file]{display:none}
       <button class="btn ghost" id="btnVer">Ver la web</button>
       <button class="btn ghost" id="btnHist">Deshacer</button>
     </div>
+    <button class="btn ghost" id="btnPiel" style="margin-top:10px">Probar colores de marca</button>
     <div style="text-align:center"><button class="link" id="btnOut">Cerrar sesión</button></div>
   </div>
 </section>
@@ -875,11 +901,29 @@ function publicar(){
   /* Si la web cambió desde que abrimos el gestor, publicar la copia vieja
      borraría lo del otro. Mejor avisar que perder trabajo. */
   gh("/contents/"+PATH_+"?ref="+BRANCH+"&t="+Date.now()).then(function(f){
-    if(fileSha && f.sha!==fileSha){
+    if(!fileSha || f.sha===fileSha){ publicarDeVerdad(n); return; }
+
+    /* La web ha cambiado desde que se abrio el gestor (otra publicacion, o una
+       actualizacion nuestra). Antes esto bloqueaba y salia un aviso molesto.
+       Ahora se REBASAN los cambios sobre la version nueva: se coge el HTML
+       fresco y se le aplican encima las ediciones pendientes. Nadie pisa a nadie. */
+    var fresco=new DOMParser().parseFromString(b2t(f.content),"text/html");
+
+    /* Si ha anadido, quitado o movido piezas, no se puede rebasar a ciegas */
+    if(structural>0){
       working(false);
-      toast("La web ha cambiado desde que abriste el gestor. Recarga (↻) y vuelve a hacer los cambios para no pisar nada.","err");
+      toast("La web ha cambiado y tienes piezas anadidas o movidas. Pulsa \u21bb y vuelve a hacerlo, para no pisar nada.","err");
       return;
     }
+    /* Ni si lo que editaba ya no existe en la version nueva */
+    var perdidas=Object.keys(edits).filter(function(k){ return !fresco.querySelector('[data-e="'+k+'"]') })
+      .concat(Object.keys(newImages).filter(function(k){ return !fresco.querySelector('[data-i="'+k+'"]') }));
+    if(perdidas.length){
+      working(false);
+      toast("La web ha cambiado y algo de lo que estabas editando ya no existe. Pulsa \u21bb para ponerte al dia.","err");
+      return;
+    }
+    doc=fresco; fileSha=f.sha; construir();
     publicarDeVerdad(n);
   }).catch(function(){ publicarDeVerdad(n) });
 }
@@ -977,6 +1021,23 @@ $("#btnVer").onclick=function(){ window.open("/","_blank") };
 $("#btnHist").onclick=historial;
 $("#btnAdd").onclick=addPieza;
 $("#btnPub").onclick=publicar;
+/* ── interruptor de piel (en pruebas) ── */
+var LS_PIEL="fly_piel";
+function pintarPiel(){
+  var corp = null;
+  try{ corp = localStorage.getItem(LS_PIEL)==="corp" }catch(e){}
+  document.documentElement.setAttribute("data-piel", corp?"corp":"");
+  var b=$("#btnPiel");
+  if(b) b.textContent = corp ? "Volver a los colores de ahora" : "Probar colores de marca";
+}
+$("#btnPiel").onclick=function(){
+  var corp=document.documentElement.getAttribute("data-piel")==="corp";
+  try{ localStorage.setItem(LS_PIEL, corp?"":"corp") }catch(e){}
+  pintarPiel();
+  toast(corp ? "Colores de siempre" : "Colores de marca: el gris del logotipo");
+};
+pintarPiel();
+
 $("#btnOut").onclick=function(){
   if(nCambios()&&!confirm("Tienes cambios sin publicar. ¿Sales igualmente?")) return;
   try{ localStorage.removeItem(LS_CRED) }catch(e){}

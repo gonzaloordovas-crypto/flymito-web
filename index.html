@@ -216,6 +216,23 @@ section[id],main a[id]{scroll-margin-top:84px}
 
 /* ── panel anunciador = navegación ── */
 .annun{display:flex; gap:5px; margin-left:auto; flex-wrap:nowrap}
+/* En escritorio el menu empuja al interruptor a la derecha. En movil el menu
+   sale del flujo, asi que el empujon lo da el boton de menu; si no, el
+   interruptor se quedaba pegado al logo. */
+.menu-btn{display:none; flex:0 0 auto; width:40px; height:40px; border-radius:3px; cursor:pointer;
+  align-items:center; justify-content:center; margin-left:8px;
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--rule-2); color:var(--ink-2)}
+.menu-btn svg{width:19px; height:19px}
+.menu-btn[aria-expanded="true"]{color:var(--amber); border-color:var(--amber-dim)}
+@media (max-width:1060px){
+  .menu-btn{display:flex; margin-left:auto}
+  .annun{position:fixed; left:0; right:0; top:var(--top-h,58px); z-index:65;
+    display:none; flex-direction:column; gap:0; margin:0; padding:8px var(--pad) 14px;
+    background:var(--glass); backdrop-filter:blur(18px) saturate(1.25);
+    border-bottom:1px solid var(--rule-2)}
+  .annun.open{display:flex}
+}
 .annun a{
   font-family:var(--mono); font-size:9px; letter-spacing:.13em; text-transform:uppercase;
   text-decoration:none; color:var(--ink-3);
@@ -386,15 +403,17 @@ section[id],main a[id]{scroll-margin-top:84px}
   .phase{gap:11px}
   .guard{width:auto; height:auto}
   .guard-cover{display:none}
+  /* redondo y solo el icono: ocupa lo minimo y se entiende igual */
   .guard-sw{
-    position:relative; inset:auto; display:inline-flex; gap:9px; align-items:center;
-    padding:15px 22px; border-radius:999px; border-color:transparent; font-weight:700;
+    position:relative; inset:auto; display:grid; place-items:center;
+    width:56px; height:56px; padding:0; border-radius:50%; border-color:transparent;
     background:linear-gradient(180deg,#E9553D,var(--rbf)); color:#fff;
     box-shadow:0 12px 28px -10px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.3);
     letter-spacing:.14em;
   }
   .guard-sw:hover,.guard-sw:active{background:linear-gradient(180deg,var(--rbf),#8F2314); color:#fff}
-  .guard-sw .wa{width:19px; height:19px; flex:0 0 auto}
+  .guard-sw span{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0)}
+  .guard-sw .wa{width:26px; height:26px}
 }
 /* en pantallas de sobremesa el icono sobra: manda la guarda */
 @media (min-width:901px){ .guard-sw .wa{display:none} }
@@ -718,7 +737,7 @@ a.ct-line:hover .v{color:var(--amber)}
     <img class="logo" src="img/u00.png" alt="Flymito">
     
   </span>
-  <nav class="annun" aria-label="Secciones">
+  <nav class="annun" id="annun" aria-label="Secciones">
     <a href="#piezas">Piezas</a>
     <a href="#bolsas">Bolsas</a>
     <a href="#flota">Flota</a>
@@ -726,6 +745,9 @@ a.ct-line:hover .v{color:var(--amber)}
     <a href="#historia">Historia</a>
     <a href="#contacto">Contacto</a>
   </nav>
+  <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="annun" aria-label="Secciones">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
   <button class="switch" id="themeSw" role="switch" aria-checked="false" aria-label="Luces de cabina: día o noche">
     <span class="sw-body"><span class="sw-bat"></span></span>
     <span class="sw-lbl">
@@ -742,8 +764,7 @@ a.ct-line:hover .v{color:var(--amber)}
   <div class="fly-track">
     <div class="fly-stage">
       <div class="layer sky-night" id="skyNight"></div>
-      <div class="layer sky" id="skyDawn" style="opacity:0"><img src="img/u01.webp" alt=""></div>
-      <div class="layer sky" id="skyDay" style="opacity:0"><img src="img/u02.webp" alt=""></div>
+      <div class="layer sky" id="skyDay" style="opacity:0"><img data-i="cielo_despegue" data-l="Cielo del despegue" data-g="Portada" src="img/u02.webp" alt=""></div>
 
       <div class="runway" id="runway">
         <span class="rw-lights l"></span>
@@ -766,7 +787,7 @@ a.ct-line:hover .v{color:var(--amber)}
 <section class="fly" id="act-cruise">
   <div class="fly-track">
     <div class="fly-stage">
-      <div class="layer"><img src="img/u04.webp" alt="Rayos de sol atravesando un mar de nubes visto desde el aire"></div>
+      <div class="layer"><img data-i="cielo_crucero" data-l="Cielo del crucero (la frase de marca)" data-g="Frase de marca" src="img/u04.webp" alt="Rayos de sol atravesando un mar de nubes visto desde el aire"></div>
       <div class="layer" style="background:linear-gradient(to bottom,rgba(4,8,10,.62),rgba(4,8,10,.34) 40%,rgba(4,8,10,.72))"></div>
       <div class="stage-copy">
         <blockquote class="manifest">
@@ -1048,7 +1069,7 @@ a.ct-line:hover .v{color:var(--amber)}
 <section class="fly" id="act-land">
   <div class="fly-track">
     <div class="fly-stage">
-      <div class="layer"><img src="img/u21.webp" alt="Vista aérea de Madrid en la aproximación" id="landImg"></div>
+      <div class="layer"><img data-i="cielo_aterrizaje" data-l="Vista del aterrizaje" data-g="Aterrizaje" src="img/u21.webp" alt="Vista aérea de Madrid en la aproximación" id="landImg"></div>
       <div class="layer" id="landVeil" style="background:linear-gradient(to bottom,rgba(4,8,10,.55),rgba(4,8,10,.3) 45%,rgba(4,8,10,.8))"></div>
       <div class="touch" id="touchFlash"></div>
       <div class="stage-copy land-copy">
@@ -1115,16 +1136,44 @@ a.ct-line:hover .v{color:var(--amber)}
     lblNight.classList.toggle("on", isNight);
     lblDay.classList.toggle("on", !isNight);
   }
-  var startNight = !window.matchMedia("(prefers-color-scheme: light)").matches;
+  /* La web esta disenada DE NOCHE: ese es el modo por defecto, mande lo que
+     mande el sistema. Si el visitante lo cambia, se recuerda la proxima vez. */
+  var guardado=null; try{ guardado=localStorage.getItem("fm_tema") }catch(e){}
+  var startNight = guardado ? guardado==="dark" : true;
   root.setAttribute("data-theme", startNight ? "dark" : "light");
   paintSwitch(startNight);
   sw.addEventListener("click", function(){
     var night = root.getAttribute("data-theme") !== "dark";
     root.setAttribute("data-theme", night ? "dark" : "light");
     paintSwitch(night);
+    try{ localStorage.setItem("fm_tema", night ? "dark" : "light") }catch(e){}
   });
 
-  /* ─────────── utilidades ─────────── */
+  /* -------- menu de secciones (movil) -------- */
+  var menuBtn=document.getElementById("menuBtn"), annun=document.getElementById("annun"),
+      topbar=document.querySelector(".top");
+  function cerrarMenu(){
+    if(annun){ annun.classList.remove("open"); menuBtn.setAttribute("aria-expanded","false") }
+  }
+  if(menuBtn && annun){
+    var altoTop=function(){
+      root.style.setProperty("--top-h", Math.round(topbar.getBoundingClientRect().height)+"px");
+    };
+    altoTop(); window.addEventListener("resize", altoTop);
+    menuBtn.addEventListener("click", function(e){
+      e.stopPropagation();
+      var abrir=!annun.classList.contains("open"); altoTop();
+      annun.classList.toggle("open", abrir);
+      menuBtn.setAttribute("aria-expanded", abrir?"true":"false");
+    });
+    annun.addEventListener("click", function(e){ if(e.target.tagName==="A") cerrarMenu() });
+    document.addEventListener("click", function(e){
+      if(annun.classList.contains("open") && !annun.contains(e.target) && e.target!==menuBtn) cerrarMenu();
+    });
+    document.addEventListener("keydown", function(e){ if(e.key==="Escape") cerrarMenu() });
+  }
+
+  /* --------- utilidades --------- */
   var clamp=function(v,a,b){ return v<a?a:(v>b?b:v); };
   var sub=function(p,a,b){ return clamp((p-a)/(b-a),0,1); };
   var lerp=function(a,b,t){ return a+(b-a)*t; };
@@ -1154,8 +1203,7 @@ a.ct-line:hover .v{color:var(--amber)}
   }
 
   /* ─────────── elementos ─────────── */
-  var skyDawn=document.getElementById("skyDawn"),
-      skyDay=document.getElementById("skyDay"),
+  var skyDay=document.getElementById("skyDay"),
       runway=document.getElementById("runway"),
       takeoffCopy=document.getElementById("takeoffCopy"),
       cue=document.getElementById("cue"),
@@ -1204,8 +1252,7 @@ a.ct-line:hover .v{color:var(--amber)}
         /* el angulo base debe coincidir con el del CSS (68deg) */
         runway.style.transform="translateX(-50%) perspective(340px) rotateX("+(68-sub(t,.42,.72)*24).toFixed(2)+"deg)";
       }
-      if(skyDawn) skyDawn.style.opacity=String(sub(t,.34,.62)*(1-sub(t,.66,.92)));
-      if(skyDay)  skyDay.style.opacity =String(sub(t,.66,.94));
+      if(skyDay) skyDay.style.opacity = String(ease(sub(t,.40,.92)));
       if(takeoffCopy){
         var out=sub(t,.06,.36);
         takeoffCopy.style.opacity=String(1-out);

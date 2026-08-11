@@ -1,0 +1,46 @@
+# Publica la web cada vez que cambia algo en main.
+#
+# El modo clasico de GitHub Pages construia a lo bruto: si Jaime publicaba dos
+# veces seguidas desde el Gestor, las dos obras chocaban, una se cancelaba y el
+# cambio se perdia EN SILENCIO. Ademas tenia un tope de 10 construcciones/hora.
+#
+# Con esto las publicaciones se ponen en COLA: entra una, termina, entra la
+# siguiente. Puede publicar cuando quiera y todas llegan.
+name: Publicar la web
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# La cola. cancel-in-progress en false = no se corta una publicacion a medias.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - name: Traer los ficheros
+        uses: actions/checkout@v4
+
+      - name: Preparar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Empaquetar el sitio
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Desplegar
+        id: despliegue
+        uses: actions/deploy-pages@v4

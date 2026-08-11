@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es"><head>
+<html lang="es" data-audio="on"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>FLYMITO · Muebles y objetos hechos con piezas de avión reales</title>
@@ -161,6 +161,29 @@ a{color:inherit}
 :focus-visible{outline:2px solid var(--amber); outline-offset:3px}
 /* la cabecera es fija: los anclajes tienen que dejarle sitio */
 section[id],main a[id]{scroll-margin-top:84px}
+
+/* ══════════════════════════════════════════════════════════════
+   PIEL DE MARCA · el gris del logotipo en vez del blanco
+   La enciende Jaime desde el Gestor con el interruptor de cabina. Solo actua
+   de noche: de dia el texto ya es oscuro y no hay blanco que sustituir.
+   ══════════════════════════════════════════════════════════════ */
+:root[data-piel="marca"]{
+  --ink:#C4C4C4; --ink-2:#8E8E8E; --ink-3:#606060; --alum:#9A9A9A;
+}
+:root[data-piel="marca"] .hero-h1,
+:root[data-piel="marca"] .manifest .ln,
+:root[data-piel="marca"] .land-msg,
+:root[data-piel="marca"] .bleed-cap h2{color:#C4C4C4}
+:root[data-piel="marca"] .hero-note,
+:root[data-piel="marca"] .land-lbl,
+:root[data-piel="marca"] .cue{color:rgba(196,196,196,.72)}
+:root[data-piel="marca"] .archive figcaption{color:#C4C4C4}
+/* el recorte del logotipo es blanco: bajando el brillo vuelve a su gris */
+:root[data-piel="marca"] .logo,
+:root[data-piel="marca"] img.logo-on-photo{filter:brightness(.70)}
+:root[data-piel="marca"] .hero-logo.logo-on-photo{
+  filter:brightness(.70) drop-shadow(0 16px 40px rgba(0,0,0,.7))}
+:root[data-piel="marca"][data-theme="light"] .logo{filter:var(--logo-filter)}
 
 /* ══════════════════════════════════════════════════════════════
    LOGO · el de la marca, nunca tipografía
@@ -419,6 +442,28 @@ section[id],main a[id]{scroll-margin-top:84px}
 /* en pantallas de sobremesa el icono sobra: manda la guarda */
 @media (min-width:901px){ .guard-sw .wa{display:none} }
 @media (max-width:520px){ .phase-read{font-size:8px; letter-spacing:.14em; padding:5px 8px} }
+
+
+/* ═══════════ SONIDO DE CABINA ═══════════
+   Los navegadores PROHIBEN que un sonido arranque solo: hace falta que el
+   visitante toque o deslice algo primero. Asi que el altavoz aparece siempre y
+   el audio se lanza en cuanto hay el primer gesto. Quien no quiera, lo apaga. */
+.snd{position:fixed; right:16px; bottom:calc(16px + 62px); z-index:56;
+  width:40px; height:40px; border-radius:50%; display:none; place-items:center;
+  cursor:pointer; color:var(--amber); border:1px solid var(--rule-2);
+  background:var(--glass); backdrop-filter:blur(10px);
+  box-shadow:0 10px 24px -14px rgba(0,0,0,.9)}
+:root[data-audio="on"] .snd{display:grid}
+.snd svg{width:18px; height:18px}
+.snd .off{display:none}
+.snd.mudo .on{display:none} .snd.mudo .off{display:block}
+.snd.mudo{color:var(--ink-3)}
+.snd::after{content:''; position:absolute; inset:-4px; border-radius:50%;
+  border:1px solid var(--amber); opacity:0; transform:scale(.8)}
+.snd.suena::after{animation:onda 2.2s ease-out infinite}
+@keyframes onda{0%{opacity:.55; transform:scale(.85)} 100%{opacity:0; transform:scale(1.5)}}
+@media (max-width:900px){ .snd{bottom:calc(16px + 66px)} }
+@media (prefers-reduced-motion:reduce){ .snd.suena::after{animation:none} }
 
 /* ══════════════════════════════════════════════════════════════
    SCROLLYTELLING · actos anclados
@@ -763,6 +808,12 @@ a.ct-line:hover .v{color:var(--amber)}
 </div>
 
 <!-- ══════════════════ FASE + INTERRUPTOR ══════════════════ -->
+<audio id="cabinaAudio" preload="none" src="audio/cabina.m4a"></audio>
+<button class="snd" id="sndBtn" aria-label="Sonido de cabina" aria-pressed="false">
+  <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
+  <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M22 9l-6 6M16 9l6 6"/></svg>
+</button>
+
 <div class="phase">
   <div class="phase-read" aria-hidden="true"><span class="led"></span><span id="phaseVal">En tierra</span></div>
   <div class="guard">
@@ -1459,6 +1510,54 @@ a.ct-line:hover .v{color:var(--amber)}
     });
   }
   montarCarruseles();
+
+  /* ─────────── sonido de cabina ───────────
+     No suena al entrar: suena al llegar a "Todo empieza con un mensaje", cuando
+     el avion ya ha aterrizado. Dos motivos, y los dos buenos:
+       1) narrativo: el audio cierra el vuelo justo donde toca hablar
+       2) tecnico: ningun navegador deja arrancar un sonido solo, hace falta que
+          el visitante haya tocado o deslizado antes. Al llegar ahi abajo ya lo
+          ha hecho de sobra, asi que el permiso esta dado. */
+  var audio=document.getElementById("cabinaAudio"), sndBtn=document.getElementById("sndBtn");
+  if(audio && sndBtn && root.getAttribute("data-audio")==="on"){
+    var mudo=false;
+    try{ mudo = localStorage.getItem("fm_sonido")==="no" }catch(e){}
+    var lanzado=false;
+    function pintarSnd(){
+      sndBtn.classList.toggle("mudo", mudo);
+      sndBtn.classList.toggle("suena", !mudo && !audio.paused);
+      sndBtn.setAttribute("aria-pressed", (!mudo).toString());
+    }
+    function arrancar(){
+      if(lanzado || mudo) return;
+      lanzado=true;
+      audio.play().then(pintarSnd).catch(function(){ lanzado=false });
+    }
+    /* el disparador: llegar a la seccion de contacto */
+    var zona=document.getElementById("contacto");
+    if(zona && "IntersectionObserver" in window){
+      var obsAudio=new IntersectionObserver(function(es){
+        es.forEach(function(e){
+          if(e.isIntersecting && e.intersectionRatio>0.22){ arrancar(); obsAudio.disconnect() }
+        });
+      },{threshold:[0,0.22,0.5]});
+      obsAudio.observe(zona);
+    } else {
+      window.addEventListener("scroll", arrancar, {once:true, passive:true});
+    }
+    sndBtn.addEventListener("click", function(e){
+      e.stopPropagation();
+      mudo=!mudo;
+      try{ localStorage.setItem("fm_sonido", mudo?"no":"si") }catch(e2){}
+      if(mudo){ audio.pause(); audio.currentTime=0 }
+      else { lanzado=true; audio.play().catch(function(){}) }
+      pintarSnd();
+    });
+    audio.addEventListener("ended", pintarSnd);
+    audio.addEventListener("play", pintarSnd);
+    audio.addEventListener("pause", pintarSnd);
+    pintarSnd();
+  }
 
   /* ─────────── reveals ─────────── */
   if("IntersectionObserver" in window){

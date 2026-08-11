@@ -149,6 +149,68 @@ textarea{font-family:var(--body); font-size:16.5px; color:inherit}
   padding:5px 10px; border-radius:7px; font-weight:700}
 input[type=file]{display:none}
 
+
+/* ═══════════════ INTERRUPTOR DE CABINA ═══════════════
+   Cambia el color de la WEB (no del gestor): pasa el texto y el logotipo de
+   blanco al gris de la marca. Se construye a base de degradados: la chapa
+   cepillada son rayas finísimas, los tornillos radiales con su ranura, y la
+   palanca un trapecio metálico que bascula sobre su base. */
+.cabina{margin:26px 0 8px}
+.cabina .placa{position:relative; border-radius:13px; padding:20px 18px 16px;
+  display:flex; align-items:center; gap:18px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.030) 0 1px, transparent 1px 3px),
+    linear-gradient(160deg,#2B3133 0%,#1A1F21 46%,#23282A 100%);
+  border:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16), inset 0 -2px 6px rgba(0,0,0,.55),
+             0 14px 30px -18px rgba(0,0,0,.95)}
+.cabina .torn{position:absolute; width:9px; height:9px; border-radius:50%;
+  background:radial-gradient(circle at 32% 28%, #8A9295, #3C4245 62%, #22282A);
+  box-shadow:inset 0 -1px 1px rgba(0,0,0,.6), 0 1px 0 rgba(255,255,255,.10)}
+.cabina .torn::after{content:''; position:absolute; inset:0; margin:auto;
+  width:5px; height:1.4px; background:rgba(0,0,0,.62); border-radius:1px;
+  transform:rotate(28deg)}
+.cabina .torn.a{top:7px;left:7px} .cabina .torn.b{top:7px;right:7px}
+.cabina .torn.c{bottom:7px;left:7px} .cabina .torn.d{bottom:7px;right:7px}
+
+/* el hueco y la palanca */
+.cabina .hueco{position:relative; flex:0 0 auto; width:46px; height:74px; border-radius:8px;
+  background:linear-gradient(180deg,#0A0D0E,#191F21 40%,#0C1011);
+  border:1px solid rgba(0,0,0,.7); cursor:pointer;
+  box-shadow:inset 0 0 12px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.06)}
+.cabina .bat{position:absolute; left:50%; top:8px; width:22px; height:40px;
+  transform:translateX(-50%); transform-origin:50% 92%;
+  transition:transform .3s cubic-bezier(.34,1.7,.5,1)}
+.cabina .bat i{display:block; width:100%; height:100%; border-radius:11px 11px 5px 5px;
+  background:linear-gradient(100deg,#F2F5F6 0%,#C3CACC 26%,#8C9497 54%,#5C6467 78%,#7E8689 100%);
+  box-shadow:0 3px 7px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.95),
+             inset 0 -3px 5px rgba(0,0,0,.35)}
+.cabina .bat::after{content:''; position:absolute; left:50%; bottom:-7px; width:26px; height:11px;
+  transform:translateX(-50%); border-radius:50%;
+  background:radial-gradient(circle at 50% 30%, #6E7679, #2A3032 70%);
+  box-shadow:0 2px 4px rgba(0,0,0,.8)}
+.cabina.on .bat{transform:translateX(-50%) rotateX(0deg) translateY(24px)}
+.cabina .bat{transform:translateX(-50%) translateY(0)}
+
+/* testigo */
+.cabina .testigo{position:absolute; top:11px; left:50%; transform:translateX(-50%);
+  width:9px; height:9px; border-radius:50%; background:#3A2020;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.8); transition:all .3s ease}
+.cabina.on .testigo{background:#FF4B33; box-shadow:0 0 12px #FF4B33, inset 0 1px 2px rgba(255,255,255,.5)}
+
+/* grabado de la placa */
+.cabina .texto{flex:1; min-width:0}
+.cabina .texto b{display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:.24em;
+  text-transform:uppercase; color:#C8D0D2; font-weight:400;
+  text-shadow:0 1px 0 rgba(0,0,0,.75), 0 -1px 0 rgba(255,255,255,.10)}
+.cabina .texto small{display:block; margin-top:7px; font-size:13px; color:var(--ink-3); line-height:1.45}
+.cabina .pos{display:flex; flex-direction:column; justify-content:space-between;
+  height:74px; flex:0 0 auto; font-family:var(--mono); font-size:8.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:#6E7679; text-align:left; padding:3px 0}
+.cabina .pos i{font-style:normal; transition:color .3s ease}
+.cabina.on .pos i:first-child{color:#FF7A66} .cabina:not(.on) .pos i:last-child{color:#C8D0D2}
+@media (prefers-reduced-motion:reduce){ .cabina .bat{transition:none} }
+
 .rowbtns{display:flex; gap:10px; margin:22px 0}
 .rowbtns .btn{padding:14px 8px; font-size:10.5px}
 .sep{height:1px; margin:26px 0; background:linear-gradient(90deg,transparent,var(--rule-2),transparent)}
@@ -333,6 +395,38 @@ input[type=file]{display:none}
     </div>
     <p class="hint" id="homeHint">Cargando…</p>
     <div class="list" id="homeList"></div>
+    <div class="cabina" id="cabinaSnd">
+      <div class="placa">
+        <span class="torn a"></span><span class="torn b"></span>
+        <span class="torn c"></span><span class="torn d"></span>
+        <div class="hueco" id="sndSw" role="switch" aria-checked="false" tabindex="0"
+             aria-label="Sonido de cabina en la web">
+          <span class="testigo"></span>
+          <span class="bat"><i></i></span>
+        </div>
+        <div class="pos"><i>Sí</i><i>No</i></div>
+        <div class="texto">
+          <b>Sonido de cabina</b>
+          <small id="sndTxt">Apagado. Baja la palanca y sonará tu audio cuando el visitante llegue al final de la web.</small>
+        </div>
+      </div>
+    </div>
+    <div class="cabina" id="cabina">
+      <div class="placa">
+        <span class="torn a"></span><span class="torn b"></span>
+        <span class="torn c"></span><span class="torn d"></span>
+        <div class="hueco" id="pielSw" role="switch" aria-checked="false" tabindex="0"
+             aria-label="Color de los textos de la web">
+          <span class="testigo"></span>
+          <span class="bat"><i></i></span>
+        </div>
+        <div class="pos"><i>Gris</i><i>Blanco</i></div>
+        <div class="texto">
+          <b>Color de la web</b>
+          <small id="pielTxt">Los textos y el logotipo salen en blanco. Baja la palanca para pasarlos al gris de la marca.</small>
+        </div>
+      </div>
+    </div>
     <button class="addbtn" id="btnAdd" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
       Añadir una pieza nueva
@@ -626,6 +720,8 @@ function pintarHome(){
     L.appendChild(b);
   });
   $("#homeHint").textContent=groups.length+" apartados";
+  pintarPielWeb();
+  pintarSonidoWeb();
   actualizarPub();
 }
 function articuloDe(g){
@@ -1000,6 +1096,50 @@ $("#btnReload").onclick=function(){
   edits={}; newImages={}; structural=0; working(true,"Recargando");
   cargarWeb().then(function(){ working(false) }).catch(function(){ working(false) });
 };
+/* ── interruptor de cabina: color de los textos de la WEB ── */
+function pintarSonidoWeb(){
+  var on = doc && doc.documentElement.getAttribute("data-audio")==="on";
+  var c=$("#cabinaSnd"), sw=$("#sndSw"), t=$("#sndTxt");
+  if(!c) return;
+  c.classList.toggle("on", on);
+  if(sw) sw.setAttribute("aria-checked", on?"true":"false");
+  if(t) t.textContent = on
+    ? "Encendido. Suena al llegar a «Todo empieza con un mensaje», con el avión ya en tierra."
+    : "Apagado. Baja la palanca y sonará tu audio cuando el visitante llegue al final de la web.";
+}
+function accionarSonido(){
+  if(!doc){ toast("Espera a que cargue la web","err"); return }
+  var on = doc.documentElement.getAttribute("data-audio")==="on";
+  if(on) doc.documentElement.removeAttribute("data-audio");
+  else doc.documentElement.setAttribute("data-audio","on");
+  structural++; pintarSonidoWeb(); actualizarPub();
+  toast(on ? "Sonido apagado. Dale a Publicar." : "Sonido encendido. Dale a Publicar.");
+}
+
+function pintarPielWeb(){
+  var on = doc && doc.documentElement.getAttribute("data-piel")==="marca";
+  var c=$("#cabina"), sw=$("#pielSw"), t=$("#pielTxt");
+  if(!c) return;
+  c.classList.toggle("on", on);
+  if(sw) sw.setAttribute("aria-checked", on?"true":"false");
+  if(t) t.textContent = on
+    ? "Los textos y el logotipo salen en el gris de la marca. Sube la palanca para volver al blanco."
+    : "Los textos y el logotipo salen en blanco. Baja la palanca para pasarlos al gris de la marca.";
+}
+function accionarPiel(){
+  if(!doc){ toast("Espera a que cargue la web","err"); return }
+  var on = doc.documentElement.getAttribute("data-piel")==="marca";
+  if(on) doc.documentElement.removeAttribute("data-piel");
+  else doc.documentElement.setAttribute("data-piel","marca");
+  structural++; pintarPielWeb(); actualizarPub();
+  toast(on ? "Textos en blanco. Dale a Publicar para verlo en la web."
+           : "Textos en gris de marca. Dale a Publicar para verlo en la web.");
+}
+$("#pielSw").onclick=accionarPiel;
+$("#sndSw").onclick=accionarSonido;
+$("#sndSw").onkeydown=function(e){ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); accionarSonido() } };
+$("#pielSw").onkeydown=function(e){ if(e.key===" "||e.key==="Enter"){ e.preventDefault(); accionarPiel() } };
+
 $("#btnVer").onclick=function(){ window.open("/","_blank") };
 $("#btnHist").onclick=historial;
 $("#btnAdd").onclick=addPieza;

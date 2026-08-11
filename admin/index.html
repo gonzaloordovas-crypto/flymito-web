@@ -883,12 +883,42 @@ function publicar(){
     publicarDeVerdad(n);
   }).catch(function(){ publicarDeVerdad(n) });
 }
+/* Tras publicar, GitHub reconstruye la web y eso tarda. Y si dos publicaciones
+   chocan, una puede perderse EN SILENCIO. Asi que no nos fiamos: preguntamos a
+   la web de verdad si el cambio ya esta ahi, y si no llega, lo decimos. */
+function esperarEnLaWeb(senales){
+  var t0=Date.now(), MAX=210000;   /* 3 min y medio */
+  function mirar(){
+    return fetch("/index.html?v="+Date.now(),{cache:"no-store"})
+      .then(function(r){ return r.text() })
+      .then(function(txt){
+        return senales.every(function(x){ return txt.indexOf(x)>=0 });
+      }).catch(function(){ return false });
+  }
+  function bucle(){
+    return mirar().then(function(ok){
+      if(ok) return true;
+      if(Date.now()-t0>MAX) return false;
+      var seg=Math.round((Date.now()-t0)/1000);
+      working(true,"Publicando","Esperando a que la web se actualice · "+seg+"s");
+      return new Promise(function(res){ setTimeout(res,6000) }).then(bucle);
+    });
+  }
+  return bucle();
+}
+
 function publicarDeVerdad(n){
   working(true,"Publicando","Preparando los cambios");
   Object.keys(edits).forEach(function(k){
     var el=doc.querySelector('[data-e="'+k+'"]'); if(el) el.textContent=edits[k];
   });
   var stamp=Date.now(), keys=Object.keys(newImages), arbol=[], ch=Promise.resolve();
+  /* señales: trozos que TIENEN que aparecer en la web si el cambio llegó */
+  var senales=[];
+  Object.keys(edits).forEach(function(k){
+    var v=(edits[k]||"").trim();
+    if(v.length>12) senales.push(v.slice(0,40));
+  });
   keys.forEach(function(key,i){
     ch=ch.then(function(){
       working(true,"Subiendo fotos",(i+1)+" de "+keys.length);
@@ -896,6 +926,7 @@ function publicarDeVerdad(n){
         return gh("/git/blobs",{method:"POST",body:JSON.stringify({content:buf2b(buf),encoding:"base64"})})
           .then(function(b){
             var p="img/"+key+"-"+stamp+"."+newImages[key].ext;
+            senales.push(p);
             arbol.push({path:p,mode:"100644",type:"blob",sha:b.sha});
             var el=doc.querySelector('[data-i="'+key+'"]'); if(el) el.setAttribute("src",p);
           });
@@ -921,9 +952,18 @@ function publicarDeVerdad(n){
     });
   }).then(function(){
     edits={}; newImages={}; structural=0;
-    working(true,"¡Publicado!","La web tarda un minuto en actualizarse");
-    setTimeout(function(){ working(false); toast("Publicado. En un minuto se ve en flymito.com","ok");
-      cargarWeb().then(function(){ show("scHome") }) },1800);
+    working(true,"Publicando","Esperando a que la web se actualice");
+    if(!senales.length){
+      setTimeout(function(){ working(false); toast("Publicado","ok");
+        cargarWeb().then(function(){ show("scHome") }) },2500);
+      return;
+    }
+    esperarEnLaWeb(senales).then(function(ok){
+      working(false);
+      if(ok) toast("¡Ya está en flymito.com! Puedes seguir cambiando cosas.","ok");
+      else toast("Se ha guardado, pero la web tarda más de lo normal. Dale a Publicar otra vez dentro de un rato si no lo ves.","err");
+      cargarWeb().then(function(){ show("scHome") });
+    });
   }).catch(function(e){ working(false); toast(String(e.message||e).slice(0,120),"err") });
 }
 $("#editBack").onclick=function(){ pintarHome(); show("scHome") };

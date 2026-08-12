@@ -613,10 +613,20 @@ section[id],main a[id]{scroll-margin-top:84px}
 .piece figure img{width:100%; aspect-ratio:4/3; object-fit:cover;
   transition:transform .9s cubic-bezier(.2,.7,.3,1)}
 .piece:hover figure img{transform:scale(1.045)}
+/* Neutro por defecto: el verde y el rojo los pone el JS segun lo que escriba
+   Jaime. Antes el rojo era el color base y cualquier palabra inesperada
+   ("Vendido", "Reservado") salia en rojo de alarma sin querer. */
 .stamp{position:absolute; top:11px; left:11px; z-index:2; font-family:var(--mono);
   font-size:9px; letter-spacing:.2em; text-transform:uppercase;
-  background:var(--rbf); color:#fff; padding:4px 8px}
+  background:rgba(8,12,14,.62); color:var(--amber); border:1px solid var(--amber);
+  backdrop-filter:blur(6px); padding:4px 8px}
 .stamp.alt-stamp{background:transparent; color:var(--amber); border:1px solid var(--amber)}
+/* ── El color de la etiqueta sale de lo que Jaime escriba ──
+   Verde = listo para llevarselo · Rojo = todavia en el taller.
+   No puede ir fijo en el HTML porque el texto es editable: lo decide el JS
+   leyendo la palabra. Si escribe otra cosa, se queda en ambar neutro. */
+.piece .stamp.sello-ok{background:#42C97C; color:#05301A; border:0}
+.piece .stamp.sello-obra{background:var(--rbf); color:#fff; border:0}
 .piece-body{padding:19px 20px 22px; display:flex; flex-direction:column; gap:11px; flex:1}
 .piece .desc{font-size:15px; color:var(--ink-2); line-height:1.55}
 .spec{margin-top:auto; padding-top:13px; border-top:1px solid var(--rule);
@@ -1634,6 +1644,22 @@ a.ct-line:hover .v{color:var(--amber)}
     audio.addEventListener("pause", pintarSnd);
     pintarSnd();
   }
+
+  /* ─────────── color de las etiquetas de pieza ───────────
+     Se mira la palabra, no una clase fija, porque el texto lo escribe Jaime
+     desde el gestor. Asi puede poner "Terminado", "Listo" o "Acabado" y
+     siempre saldra verde. */
+  (function(){
+    var LISTO=/termin|acabad|list[oa]|disponible|entregad/i;
+    /* rojo = no te lo puedes llevar, sea porque esta en obra o porque ya no esta */
+    var OBRA =/proceso|taller|curso|marcha|pendiente|restaurand|reparand|vendid|reservad|agotad/i;
+    document.querySelectorAll(".piece .stamp").forEach(function(el){
+      var t=(el.textContent||"").trim();
+      el.classList.remove("sello-ok","sello-obra");
+      if(LISTO.test(t)) el.classList.add("sello-ok");
+      else if(OBRA.test(t)) el.classList.add("sello-obra");
+    });
+  })();
 
   /* ─────────── reveals ─────────── */
   if("IntersectionObserver" in window){

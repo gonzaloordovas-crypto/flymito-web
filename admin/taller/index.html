@@ -785,6 +785,7 @@ p.paso .np{
         cierres. Toca uno para ponerlo. Para llevártelo fuera, <b>Guardar hoja de corte</b>.</p>
       <div class="variants" id="variants"></div>
       <button class="act" id="guardarPos" hidden><span class="k">✓</span> Guardar cómo lo has colocado</button>
+      <button class="act" id="subirTodo" hidden><span class="k">↑</span> <span id="subirTexto">Subir a la biblioteca</span></button>
     </section>
 
     <section class="sec" id="sec-cierre">
@@ -1689,6 +1690,10 @@ function renderVariants(){
   $("#varHint").hidden = !state.designs.length;
   $("#descartar").hidden = state.designIdx < 0;
   $("#guardarPos").hidden = state.designIdx < 0;
+  const sueltos = pendientesDeSubir().length;
+  $("#subirTodo").hidden = !sueltos;
+  if(sueltos) $("#subirTexto").textContent =
+    sueltos === 1 ? "Subir 1 diseño a la biblioteca" : `Subir ${sueltos} diseños a la biblioteca`;
   // Lo último arriba: es lo que se busca.
   box.innerHTML = state.designs.map((d,i) => ({d, i})).reverse().map(({d, i}) => {
     const a = d.panels && (d.panels["lat-izq"] || d.panels["frente-inf"] || d.panels["trasera"]);
@@ -1842,6 +1847,40 @@ $("#brief").addEventListener("input", () => { if(!promptTocado) pintarPrompt(); 
 
 // Descartar = volver a la versión anterior, o al aluminio si no había ninguna.
 $("#guardarPos").addEventListener("click", guardarEncuadre);
+$("#subirTodo").addEventListener("click", subirLosMios);
+
+// Sube a la biblioteca lo que solo está en este aparato.
+// UNO A UNO a propósito: el servidor lee el índice, le añade y lo reescribe.
+// En paralelo, cada uno partiría del índice viejo y solo sobreviviría el
+// último, con 200 y sin un solo error.
+async function subirLosMios(){
+  const cola = pendientesDeSubir();
+  if(!cola.length) return;
+  const b = $("#subirTodo"), t = $("#subirTexto");
+  b.disabled = true;
+  let hechos = 0;
+  for(const d of cola){
+    t.textContent = `Subiendo ${hechos + 1} de ${cola.length}…`;
+    try{
+      let th = d.thumb;
+      if(!th){
+        const pri = d.panels && (d.panels["lat-izq"] || d.panels["frente-inf"] || d.panels["trasera"]);
+        th = await miniatura(pri && pri.img).catch(() => null);
+      }
+      await bib("POST", {diseno: Object.assign({}, d, {thumb: th})});
+      idsArriba.add(d.id);
+      hechos++;
+    }catch(_){ break; }
+  }
+  b.disabled = false;
+  renderVariants();
+  if(hechos === cola.length){
+    sayAI(`<b>${hechos}</b> ${hechos === 1 ? "diseño subido" : "diseños subidos"}. `
+        + `Ya los ve cualquiera que entre, desde cualquier aparato.`, "ok");
+  }else{
+    sayAI(`Subidos ${hechos} de ${cola.length}. Vuelve a darle para los que faltan.`, "bad");
+  }
+}
 $("#descartar").addEventListener("click", () => {
   if(state.designIdx < 0) return;
   state.designs.splice(state.designIdx, 1);
@@ -2797,29 +2836,50 @@ renderPresets();
 renderAll();
 renderVariants();
 
+// Los que ya están arriba. Lo que no esté aquí es suyo y solo suyo.
+let idsArriba = new Set();
+
+// FUSIONAR, nunca reemplazar. Antes lo remoto hacía `state.designs = lista` y
+// se comía lo local: bastaba un diseño en la biblioteca para que el siguiente
+// guardado borrase del cajón todo lo que solo estaba en este aparato.
+function fusiona(remotos, locales){
+  const por = new Map();
+  (locales || []).forEach(d => { if(d && d.id) por.set(d.id, d); });
+  (remotos || []).forEach(d => { if(d && d.id) por.set(d.id, d); });   // arriba manda
+  return [...por.values()].sort((a, b) => (a.fecha || 0) - (b.fecha || 0));
+}
+
 function pintaGuardados(lista, compartida){
   if(!Array.isArray(lista) || !lista.length) return false;
   state.designs = lista;
   state.designIdx = -1;               // no se aplica solo; él elige cuál
   renderVariants();
-  const n = lista.length;
+  const n = lista.length, sueltos = pendientesDeSubir().length;
   sayAI(`Tienes <b>${n}</b> ${n === 1 ? "diseño guardado" : "diseños guardados"}`
       + (compartida ? " en la biblioteca, visibles desde cualquier aparato" : " en este aparato")
-      + ". Están abajo: toca uno para ponerlo.");
+      + ". Están abajo: toca uno para ponerlo."
+      + (sueltos ? ` <b>${sueltos}</b> ${sueltos === 1 ? "está solo" : "están solo"} en este aparato.` : ""));
   return true;
 }
 
+/** Los que tiene aquí y no ha visto nadie más. */
+function pendientesDeSubir(){
+  if(!bibViva) return [];
+  return state.designs.filter(d => d && d.id && d.panels && !idsArriba.has(d.id));
+}
+
 function arrancaBiblioteca(){
+  let remotos = null;
   return bib("GET").then(r => {
     if(r && Array.isArray(r.disenos)){
       bibViva = true;
-      if(!pintaGuardados(r.disenos, true)) sayAI("");
-      return true;
+      remotos = r.disenos;
+      idsArriba = new Set(remotos.map(d => d && d.id).filter(Boolean));
     }
-    return false;
-  }).catch(() => false).then(hubo => {
-    if(hubo) return;
-    return leerDisenos().then(g => pintaGuardados(g, false));
+  }).catch(() => {}).then(() => leerDisenos()).catch(() => null).then(locales => {
+    const todo = fusiona(remotos, locales);
+    if(!pintaGuardados(todo, bibViva)) sayAI("");
+    renderVariants();
   }).catch(() => {});
 }
 arrancaBiblioteca();

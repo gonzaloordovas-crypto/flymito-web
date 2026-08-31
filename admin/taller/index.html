@@ -574,6 +574,10 @@ p.paso .np{
         <button class="act" id="gen"><span class="k">✦</span> Dibujarlo aquí mismo</button>
         <button class="act" id="again" disabled><span class="k">↻</span> Otra versión</button>
       </div>
+      <div class="row" id="claveRow" hidden>
+        <label for="clave">Clave</label>
+        <input type="password" id="clave" placeholder="La del generador" autocomplete="off">
+      </div>
       <p class="msg" id="aimsg"></p>
       <div id="promptbox"></div>
 
@@ -673,6 +677,10 @@ const VIEWS = [
 /* ══ MODELO EN MILÍMETROS ═════════════════════════════════════════════════
    Estándar ATLAS. Manda en la hoja de corte, no en la maqueta.            */
 const STD = {half:{w:301,h:1030,d:405}, full:{w:301,h:1030,d:810}};
+
+/* Ruta que genera los diseños con Gemini. La clave NO está aquí: vive en el
+   servidor de esa ruta. Vacío = el botón «Dibujarlo aquí mismo» no se enseña. */
+const API_DISENO = "";
 
 const FINISHES = [
   {id:"alu",    name:"Aluminio"},
@@ -1201,10 +1209,16 @@ function applyDesign(d){
     if(f.lock) return;
     const a = d.panels[z.id];
     if(!a) return;
-    f.type = "ia"; f.svg = a.svg; f.vb = a.vb; n++;
+    if(a.img){ f.type = "imagen"; f.img = a.img; f.fit = "cover"; f.zoom = 1; f.ox = 0; f.oy = 0; }
+    else if(a.svg){ f.type = "ia"; f.svg = a.svg; f.vb = a.vb; }
+    else return;
+    n++;
   });
   const inf = state.zones["frente-inf"], uni = state.zones["frente"];
-  if(inf.svg && !uni.lock){ uni.type="ia"; uni.svg=inf.svg; uni.vb=inf.vb; }
+  if(!uni.lock){
+    if(inf.type === "imagen" && inf.img){ uni.type="imagen"; uni.img=inf.img; uni.fit=inf.fit; }
+    else if(inf.svg){ uni.type="ia"; uni.svg=inf.svg; uni.vb=inf.vb; }
+  }
   state.designName = d.name;
   return n;
 }
@@ -1214,24 +1228,26 @@ function renderVariants(){
   $("#pasoVar").hidden = !state.designs.length;
   box.innerHTML = state.designs.map((d,i) => {
     const a = d.panels["lat-izq"];
-    const th = a ? `<svg class="vthumb" viewBox="${a.vb}" preserveAspectRatio="xMidYMid slice">${a.svg}</svg>`
-                 : `<span class="vthumb"></span>`;
+    const th = !a ? `<span class="vthumb"></span>`
+      : a.img ? `<img class="vthumb" src="${a.img}" alt="" style="object-fit:cover">`
+              : `<svg class="vthumb" viewBox="${a.vb}" preserveAspectRatio="xMidYMid slice">${a.svg}</svg>`;
     return `<button class="variant" data-variant="${i}" aria-pressed="${i===state.designIdx}" `
          + `title="${esc(d.name)}">${th}<span class="vname">${esc(d.name)}</span></button>`;
   }).join("");
-  $("#again").disabled = !sample || !state.lastBrief || !!running;
+  $("#again").disabled = (!sample && !API_DISENO) || !state.lastBrief || !!running;
 }
 
 let genN = 0;
 async function generate(brief){
-  if(!sample){ sayAI("El generador no está disponible en esta ventana. Puedes seguir subiendo imágenes a mano en cada zona.","bad"); return; }
+  if(!sample && !API_DISENO){ sayAI("El generador no está disponible aquí. Puedes seguir subiendo imágenes a mano en cada zona.","bad"); return; }
   if(running){ running.abort(); running = null; }
   const mio = ++genN;
   const ctrl = new AbortController(); running = ctrl;
   state.lastBrief = brief;
   $("#gen").disabled = $("#again").disabled = true;
   const locked = AI_ZONES.filter(z => state.zones[z.id].lock).length;
-  sayAI('Claude está dibujando los paneles<span class="dots"></span>'
+  sayAI((API_DISENO ? 'Gemini está dibujando los paneles' : 'Claude está dibujando los paneles')
+      + '<span class="dots"></span>'
       + (locked ? ` · ${locked} con candado, no se tocan` : ""));
 
   const input =
@@ -1265,16 +1281,45 @@ Reglas del SVG, sin excepción:
 - Paleta de 3 a 5 colores, contundente, del mundo del encargo.`;
 
   try{
-    const out = await sample.json(input, {modelTier:"complex", signal:ctrl.signal});
-    if(ctrl.signal.aborted) return;
-    const pan = out && out.paneles;
-    if(!pan) throw {code:"bad_shape", message:"respuesta sin paneles"};
-    const panels = {};
-    AI_ZONES.forEach(z => { const c = cleanSVG(pan[z.id]); if(c) panels[z.id] = c; });
+    let nombre, panels = {};
+    if(API_DISENO){
+      // Gemini, a través de nuestra propia ruta. La clave vive allí.
+      const clave = recall(LS_CLAVE) || ($("#clave") ? $("#clave").value.trim() : "");
+      if(!clave){
+        $("#claveRow").hidden = false; $("#clave").focus();
+        sayAI("Escribe la clave del generador y vuelve a darle.","bad");
+        throw {code:"cancelled"};
+      }
+      const libres = AI_ZONES.filter(z => !state.zones[z.id].lock);
+      const r = await fetch(API_DISENO, {
+        method:"POST", signal:ctrl.signal,
+        headers:{"Content-Type":"application/json", "X-Acceso":clave},
+        body: JSON.stringify({brief, paneles: libres.map(z => {
+          const mm = zoneMM(z.id);
+          return {id:z.id, nombre:z.nombre, w:mm.w, h:mm.h};
+        })})
+      });
+      const j = await r.json().catch(() => ({}));
+      if(r.status === 401){
+        remember(LS_CLAVE, ""); $("#claveRow").hidden = false;
+        throw {code:"clave", message:"Clave incorrecta"};
+      }
+      if(!r.ok) throw {code:"api", message:(j && j.error) || ("El generador respondió " + r.status)};
+      remember(LS_CLAVE, clave); $("#claveRow").hidden = true;
+      Object.entries(j.paneles || {}).forEach(([id, img]) => { panels[id] = {img}; });
+      nombre = brief;
+    }else{
+      const out = await sample.json(input, {modelTier:"complex", signal:ctrl.signal});
+      if(ctrl.signal.aborted) return;
+      const pan = out && out.paneles;
+      if(!pan) throw {code:"bad_shape", message:"respuesta sin paneles"};
+      AI_ZONES.forEach(z => { const c = cleanSVG(pan[z.id]); if(c) panels[z.id] = c; });
+      nombre = out.nombre;
+    }
     const got = Object.keys(panels).length;
     if(!got) throw {code:"bad_shape", message:"ningún panel válido"};
 
-    const name = String(out.nombre || brief).slice(0,42);
+    const name = String(nombre || brief).slice(0,42);
     state.designs.push({name, brief, panels});
     if(state.designs.length > 8) state.designs.shift();
     state.designIdx = state.designs.length - 1;
@@ -1288,7 +1333,9 @@ Reglas del SVG, sin excepción:
     if(c === "cancelled") return;
     if(c === "not_granted")      sayAI("No hay permiso para usar el generador en esta ventana.","bad");
     else if(c === "rate_limited")sayAI("Demasiadas peticiones seguidas. Espera un momento y vuelve a darle.","bad");
-    else                         sayAI("No ha salido un diseño válido. Prueba a describirlo con más detalle, o usa el prompt para GPT / Gemini.","bad");
+    else if(c === "clave")       sayAI("Esa clave no es. Vuelve a escribirla.","bad");
+    else if(c === "api")         sayAI(esc(err.message),"bad");
+    else                         sayAI("No ha salido un diseño válido. Prueba a describirlo con más detalle, o usa el encargo para GPT / Gemini.","bad");
   }finally{
     if(mio === genN){ $("#gen").disabled = false; running = null; renderVariants(); }
   }
@@ -1669,7 +1716,7 @@ $("#save-png").addEventListener("click", async () => {
 });
 
 /* ══ PORTADA Y TUTORIAL ═══════════════════════════════════════════════════ */
-const SEEN = "mdv-visto-v1";
+const SEEN = "mdv-visto-v1", LS_CLAVE = "mdv-clave";
 function remember(k, v){ try{ localStorage.setItem(k, v); }catch(_){} }
 function recall(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
 
@@ -1896,14 +1943,18 @@ use("downloads").then(d => { downloads = d; }).catch(() => {});
 
 use("sample").then(s => {
   sample = s;
-  if(!s){
+  if(!s && !API_DISENO){
     // Sin generador no tiene sentido enseñar el botón: se quita y se dice
     // cuál es el camino que sí funciona.
     $("#gen").hidden = true; $("#again").hidden = true;
   }
   renderVariants();
-  if(!s){ $("#gen").disabled = true;
-          sayAI("<b>Dibujar aquí mismo todavía no está conectado.</b> El camino es: copiar el encargo, generarlo en GPT o Gemini, y subir cada imagen en su zona."); }
+  if(!s && !API_DISENO){
+    $("#gen").disabled = true;
+    sayAI("<b>Dibujar aquí mismo todavía no está conectado.</b> El camino es: copiar el encargo, generarlo en GPT o Gemini, y subir cada imagen en su zona.");
+  }else if(API_DISENO && !recall(LS_CLAVE)){
+    $("#claveRow").hidden = false;
+  }
 }).catch(() => {});
 </script>
 

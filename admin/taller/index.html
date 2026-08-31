@@ -1808,7 +1808,7 @@ Reglas del SVG, sin excepción:
     if(state.designs.length > 40) state.designs.shift();
     if(API_BIBLIO && claveGuardada()){
       const primero = panels["lat-izq"] || panels["frente-inf"] || panels["trasera"];
-      miniatura(primero && primero.img)
+      miniaturaDe(primero)
         .then(th => subeDiseno(d, th))
         .then(() => { bibViva = true; renderVariants(); })
         .catch(() => { guardarDisenos(); });   // si falla, al menos en local
@@ -1868,7 +1868,7 @@ async function subirLosMios(){
       let th = d.thumb;
       if(!th){
         const pri = d.panels && (d.panels["lat-izq"] || d.panels["frente-inf"] || d.panels["trasera"]);
-        th = await miniatura(pri && pri.img).catch(() => null);
+        th = await miniaturaDe(pri).catch(() => null);
       }
       await subeDiseno(d, th);
       hechos++;
@@ -2534,6 +2534,20 @@ function miniatura(uri){
   });
 }
 
+// La miniatura de un panel, VENGA COMO VENGA. Antes solo se sabía hacer de una
+// imagen: los diseños de la IA son SVG, se quedaban sin miniatura, y al abrirlos
+// desde la biblioteca (que no trae los paneles) salía un cuadro gris vacío.
+function miniaturaDe(p){
+  if(!p) return Promise.resolve(null);
+  if(p.img) return miniatura(p.img);
+  if(!p.svg) return Promise.resolve(null);
+  const vb = String(p.vb || "0 0 1000 1000").trim().split(/\s+/).map(Number);
+  const w = vb[2] || 1000, h = vb[3] || 1000;
+  const doc = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" `
+            + `viewBox="${p.vb || `0 0 ${w} ${h}`}">${p.svg}</svg>`;
+  return miniatura("data:image/svg+xml;charset=utf-8," + encodeURIComponent(doc));
+}
+
 // Los paneles pesan: solo se traen cuando de verdad se van a usar.
 async function traerPaneles(d){
   if(d.panels || !d.url) return d;
@@ -2892,6 +2906,28 @@ function pendientesDeSubir(){
   return state.designs.filter(d => d && d.id && d.panels && !idsArriba.has(d.id));
 }
 
+// Los diseños subidos antes de que se supiera hacer miniatura de un SVG están
+// arriba sin ella: la tarjeta sale como un cuadro gris. Se les baja el panel,
+// se les hace la miniatura y se les pega — solo la ficha, sin resubir megas.
+async function arreglaMiniaturas(){
+  if(!bibViva) return;
+  const rotos = state.designs.filter(d => d && d.id && !d.thumb && idsArriba.has(d.id));
+  if(!rotos.length) return;
+  let n = 0;
+  for(const d of rotos){
+    try{
+      await traerPaneles(d);
+      const pri = d.panels && (d.panels["lat-izq"] || d.panels["frente-inf"] || d.panels["trasera"]);
+      const th = await miniaturaDe(pri);
+      if(!th) continue;
+      d.thumb = th;
+      await bib("POST", {diseno: {id: d.id, thumb: th}, soloFicha: true});
+      n++;
+    }catch(_){ /* el siguiente; sin miniatura solo se ve feo, no se pierde nada */ }
+  }
+  if(n){ renderVariants(); guardarDisenos(); }
+}
+
 function arrancaBiblioteca(){
   let remotos = null;
   return bib("GET").then(r => {
@@ -2908,6 +2944,7 @@ function arrancaBiblioteca(){
     // dos gestos distintos era pedirle al usuario que se acordara de algo que
     // el programa ya sabe.
     if(pendientesDeSubir().length) setTimeout(subirLosMios, 800);
+    setTimeout(arreglaMiniaturas, 300);
   }).catch(() => {});
 }
 arrancaBiblioteca();

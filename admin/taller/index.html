@@ -682,6 +682,11 @@ p.paso .np{
         <button data-model="full" aria-pressed="false">Full · 810 fondo</button>
       </div>
       <p class="hint" id="hint-model"></p>
+      <div class="seg" role="group" aria-label="Piel del 3D" style="margin-top:8px">
+        <button data-piel="foto" aria-pressed="true">3D con tus fotos</button>
+        <button data-piel="modelado" aria-pressed="false">3D calculado</button>
+      </div>
+      <p class="hint" id="hint-piel"></p>
     </section>
 
     <section class="sec">
@@ -786,7 +791,7 @@ function newFinish(id){
 }
 
 const state = {
-  model:"half", latch:"recortado", view:"mock",
+  model:"half", latch:"recortado", view:"mock", piel:"foto",
   dims:{w:301,h:1030,d:405,frame:28,bandTop:285,bandH:205},
   bleed:10, roll:1370, open:null, designName:null,
   designs:[], designIdx:-1, lastBrief:"",
@@ -1118,6 +1123,9 @@ function renderReadout(){
   $("#hint-model").innerHTML = state.model === "half"
     ? "Medio carro de galley: 405 mm de fondo."
     : "Carro entero: 810 mm de fondo. Cambia el tamaño de los laterales en la hoja de corte; la maqueta es la misma cara.";
+  $("#hint-piel").innerHTML = state.piel === "foto"
+    ? "El 3D se viste con <b>tus cuatro planchas</b>: metal, bisagras y tornillos son foto de verdad. Al girar mucho se nota que las caras son planas."
+    : "El 3D se calcula entero. Aguanta cualquier ángulo, pero el metal nunca será una foto.";
   $("#hint-latch").innerHTML = state.latch === "recortado"
     ? "El frontal va en <b>dos piezas</b> y la franja del cierre se queda con su acabado original. Es como está el del Atlético."
     : "Se desmonta el herraje y el frontal va <b>de una pieza</b>: mira cómo el dibujo cruza la franja sin cortarse. Es como está el Gulf.";
@@ -1130,6 +1138,7 @@ function syncInputs(){
   $("#m-bleed").value=state.bleed; $("#m-roll").value=state.roll;
   document.querySelectorAll("[data-model]").forEach(b => b.setAttribute("aria-pressed", b.dataset.model===state.model));
   document.querySelectorAll("[data-latch]").forEach(b => b.setAttribute("aria-pressed", b.dataset.latch===state.latch));
+  document.querySelectorAll("[data-piel]").forEach(b => b.setAttribute("aria-pressed", b.dataset.piel===state.piel));
   document.querySelectorAll("[data-view]").forEach(b => b.setAttribute("aria-selected", b.dataset.view===state.view));
 }
 function renderAll(){ renderZones(); renderStage(); renderReadout(); syncInputs(); }
@@ -1144,6 +1153,7 @@ document.addEventListener("click", e => {
     Object.assign(state.dims, STD[state.model]);
     renderAll(); return;
   }
+  if(t.dataset.piel){ state.piel = t.dataset.piel; renderAll(); return; }
   if(t.dataset.latch){ state.latch = t.dataset.latch; state.open = null; renderAll(); return; }
   if(t.dataset.idea !== undefined){
     const idea = IDEAS[+t.dataset.idea];
@@ -1540,6 +1550,20 @@ $("#descartar").addEventListener("click", () => {
 $("#gen").addEventListener("click", () => generate(briefText()));
 $("#again").addEventListener("click", () => generate(state.lastBrief || briefText()));
 
+// Dónde cae el bastidor dentro de cada plancha, deducido del hueco y del
+// ancho de marco. Cada eje por su lado: los renders NO son isótropos —van
+// estirados un 19% en vertical— y mapearlos sobre la caja lo corrige.
+function marcoPx(v){
+  const P = panels(), f = state.dims.frame, hs = v.holes;
+  const x0 = Math.min(...hs.map(h => h.x)), x1 = Math.max(...hs.map(h => h.x + h.w));
+  const y0 = Math.min(...hs.map(h => h.y)), y1 = Math.max(...hs.map(h => h.y + h.h));
+  const zid = zoneFor(hs[0].zone);
+  const anchoMM = (P[zid] || {w:245}).w;
+  const altoMM  = P.trasera.h;              // alto útil, común a las cuatro caras
+  const sx = anchoMM / (x1 - x0), sy = altoMM / (y1 - y0);
+  return {x: x0 - f/sx, y: y0 - f/sy, w: (x1 - x0) + 2*f/sx, h: (y1 - y0) + 2*f/sy};
+}
+
 /* ══ VOLUMEN ══════════════════════════════════════════════════════════════
    Caja de aluminio con los paneles como texturas. El marco NO se pinta: es
    el propio cuerpo asomando por el borde, igual que en la maqueta.        */
@@ -1747,7 +1771,11 @@ async function mount3D(){
   // panel queda hundido como en el trolley real.
   const O = 0.006;
   const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(W-2*O, H-2*O, D-2*O), alu);
+  cuerpo.visible = (state.piel !== "foto");   // con foto, el cuerpo estorba
   rig.add(cuerpo);
+
+  const CALC = state.piel !== "foto";
+  const CQ = F * 1.22;   // lado de la cantonera
 
   // Las doce vigas del bastidor.
   const viga = (sx, sy, sz, px, py, pz) => {
@@ -1756,18 +1784,19 @@ async function mount3D(){
     rig.add(m);
   };
   const f2 = F/2, xx = W/2 - f2, yy = H/2 - f2, zz = D/2 - f2;
+  if(CALC){
   [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b]) => viga(F, H, F, a*xx, 0, b*zz));   // montantes
   [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b]) => viga(W, F, F, 0, a*yy, b*zz));   // travesaños
   [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b]) => viga(F, F, D, a*xx, b*yy, 0));   // largueros
 
   // Cantoneras: los cubos de las ocho esquinas. Es el detalle que hace que se
   // reconozca como un carro de galley y no como una caja.
-  const CQ = F * 1.22;
   [-1,1].forEach(a => [-1,1].forEach(b => [-1,1].forEach(c => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(CQ, CQ, CQ), canto);
     m.position.set(a*(W/2 - CQ/2 + 0.002), b*(H/2 - CQ/2 + 0.002), c*(D/2 - CQ/2 + 0.002));
     rig.add(m);
   })));
+  }
 
   const EPS = 0.0018 - O;   // el cuerpo está metido O
   const orla = new THREE.MeshBasicMaterial({color:0x1B2022, transparent:true, opacity:.5});
@@ -1802,6 +1831,7 @@ async function mount3D(){
   await put("tapa",    iw, idp, [0, H/2+EPS, 0],  [-Math.PI/2, 0, 0]);
   if(tok !== G.token) return;
 
+  if(CALC){
   // Bisagras: cinco, en la arista de la puerta. Se ven en todas las fotos.
   const bisagra = new THREE.MeshStandardMaterial({color:0xB4BCB9, metalness:.88, roughness:.28, envMapIntensity:1.2});
   [0.34, 0.17, 0, -0.17, -0.34].forEach(t => {
@@ -1872,6 +1902,41 @@ async function mount3D(){
       new THREE.MeshStandardMaterial({color:col, roughness:.55}));
     pd.position.set(sx*0.046, -H/2 - 0.010, D/2 + 0.014); rig.add(pd);
   });
+  }
+
+  // ── Piel de foto: las cuatro planchas ortográficas sobre las caras ────
+  if(state.piel === "foto"){
+    const cargar = src => new Promise(ok => {
+      const t = new THREE.TextureLoader().load(src, tx => {
+        tx.encoding = THREE.sRGBEncoding; tx.anisotropy = 8; ok(tx);
+      }, undefined, () => ok(null));
+      t.encoding = THREE.sRGBEncoding;
+    });
+    const caras = [
+      {v: VIEWS[0], fw: W, fh: H, pos:[0, 0,  D/2 + 0.004], rot:[0, 0, 0]},
+      {v: VIEWS[2], fw: W, fh: H, pos:[0, 0, -D/2 - 0.004], rot:[0, Math.PI, 0]},
+      {v: VIEWS[1], fw: D, fh: H, pos:[-W/2 - 0.004, 0, 0], rot:[0, -Math.PI/2, 0]},
+      {v: VIEWS[3], fw: D, fh: H, pos:[ W/2 + 0.004, 0, 0], rot:[0,  Math.PI/2, 0]}
+    ];
+    for(const c of caras){
+      const tex = await cargar(c.v.img);
+      if(tok !== G.token) return;
+      if(!tex) continue;
+      const m = marcoPx(c.v);
+      const S2 = 0.001;
+      // La plancha entera, escalada para que su BASTIDOR case con la cara.
+      const pw = c.fw * (PLATE.w / m.w), ph = c.fh * (PLATE.h / m.h);
+      const dx = (PLATE.w/2 - (m.x + m.w/2)) * (c.fw / m.w);
+      const dy = ((m.y + m.h/2) - PLATE.h/2) * (c.fh / m.h);
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph),
+        new THREE.MeshBasicMaterial({map:tex, transparent:true, alphaTest:0.35,
+                                     side:THREE.DoubleSide, toneMapped:false}));
+      mesh.position.set(c.pos[0], c.pos[1], c.pos[2]);
+      mesh.rotation.set(c.rot[0], c.rot[1], c.rot[2]);
+      mesh.translateX(dx); mesh.translateY(dy);
+      rig.add(mesh);
+    }
+  }
 
   // Solo la oclusión de contacto: apoya el carro sin manchar ninguna cara.
   const sc = document.createElement("canvas"); sc.width = sc.height = 256;

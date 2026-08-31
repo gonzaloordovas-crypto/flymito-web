@@ -288,6 +288,9 @@ p.paso .np{
 .msg{margin:9px 0 0;font-size:11.5px;line-height:1.45;color:var(--ink-3);min-height:1em}
 .msg.bad{color:var(--rbf)}
 .msg.ok{color:var(--go)}
+.msg .vuelo{display:inline-block;animation:asoma .5s ease both}
+@keyframes asoma{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.msg .vuelo{animation:none}}
 .msg .dots::after{content:"";animation:dots 1.4s steps(4,end) infinite}
 @keyframes dots{0%{content:""}25%{content:"·"}50%{content:"··"}75%{content:"···"}}
 
@@ -596,6 +599,8 @@ p.paso .np{
       <p class="msg" id="aimsg"></p>
 
       <p class="paso" id="pasoVar" hidden><span class="np">3</span> Tus versiones</p>
+      <p class="hint" id="varHint" hidden>Se guardan en este navegador y aguantan
+        aunque cierres. Para llevártelas fuera, <b>Guardar hoja de corte</b>.</p>
       <div class="variants" id="variants"></div>
     </section>
 
@@ -1163,6 +1168,46 @@ document.addEventListener("change", e => {
    La página no puede llamar a Gemini ni a GPT: el sandbox bloquea la salida
    a red. Sí puede preguntarle a Claude, que devuelve CÓDIGO — así que el
    diseño llega en SVG vectorial, que además escala sin perder para imprimir. */
+// Mientras Gemini trabaja, la espera cuenta un vuelo de principio a fin.
+// En orden, no al azar: si tarda poco ves el despegue; si tarda, aterrizas.
+const VUELO = [
+  "Solicitando permiso a la torre",
+  "Autorizados a rodar",
+  "Empujando desde el finger",
+  "Comprobando la lista de despegue",
+  "Flaps a quince",
+  "Motores al ralentí",
+  "Despegando los diseños",
+  "Tren arriba",
+  "Virando a rumbo",
+  "Alcanzando altitud de crucero",
+  "El comandante ha apagado la señal",
+  "Sacando el carro al pasillo",
+  "Servicio de cabina en marcha",
+  "Turbulencia leve, nada grave",
+  "Repasando el rotulado a treinta y ocho mil pies",
+  "Cruzando el charco",
+  "Iniciando el descenso",
+  "Mesas plegables en posición vertical",
+  "Cinturones abrochados",
+  "Tomando pista",
+  "Rodando a plataforma",
+  "Bienvenidos a destino"
+];
+let vueloN = 0, vueloTic = 0;
+function despega(){
+  vueloN = 0;
+  const poner = () => {
+    // Al final del vuelo se queda dando vueltas por el crucero.
+    const i = vueloN < VUELO.length ? vueloN : 9 + (vueloN % 7);
+    sayAI(`<span class="vuelo">${VUELO[i]}<span class="dots"></span></span>`);
+    vueloN++;
+  };
+  poner();
+  vueloTic = setInterval(poner, 2800);
+}
+function aterriza(){ if(vueloTic){ clearInterval(vueloTic); vueloTic = 0; } }
+
 let sample = null, downloads = null, running = null;
 const aimsg = $("#aimsg"), msg = $("#msg");
 function say(t,k){ msg.textContent=t; msg.className="msg"+(k?" "+k:""); }
@@ -1276,6 +1321,7 @@ function applyDesign(d){
 function renderVariants(){
   const box = $("#variants");
   $("#pasoVar").hidden = !state.designs.length;
+  $("#varHint").hidden = !state.designs.length;
   $("#descartar").hidden = state.designIdx < 0;
   box.innerHTML = state.designs.map((d,i) => {
     const a = d.panels["lat-izq"];
@@ -1297,9 +1343,7 @@ async function generate(brief){
   state.lastBrief = brief;
   $("#gen").disabled = $("#again").disabled = true;
   const locked = AI_ZONES.filter(z => state.zones[z.id].lock).length;
-  sayAI((API_DISENO ? 'Gemini está dibujando los paneles' : 'Claude está dibujando los paneles')
-      + '<span class="dots"></span>'
-      + (locked ? ` · ${locked} con candado, no se tocan` : ""));
+  despega();
 
   const input =
 `Eres director de arte de un taller que vinila trolleys de avión. Diseña un
@@ -1373,15 +1417,19 @@ Reglas del SVG, sin excepción:
     if(!got) throw {code:"bad_shape", message:"ningún panel válido"};
 
     const name = String(nombre || brief).slice(0,42);
-    state.designs.push({name, brief, panels});
+    state.designs.push({name, brief, panels, fecha: Date.now()});
     if(state.designs.length > 8) state.designs.shift();
+    guardarDisenos();
     state.designIdx = state.designs.length - 1;
     const n = applyDesign(state.designs[state.designIdx]);
     renderAll();
+    aterriza();
     sayAI(`<b>${esc(state.designName)}</b> · ${n} paneles puestos`
+        + (locked ? ` · ${locked} con candado, sin tocar` : "")
         + (got < AI_ZONES.length ? ` (${AI_ZONES.length-got} no salieron)` : "")
         + `. Dale a «Otra versión» para tener alternativas, y pon el candado a los paneles que ya te gusten.`, "ok");
   }catch(err){
+    aterriza();
     const c = err && err.code;
     if(c === "cancelled") return;
     if(c === "not_granted")      sayAI("No hay permiso para usar el generador en esta ventana.","bad");
@@ -1390,7 +1438,7 @@ Reglas del SVG, sin excepción:
     else if(c === "api")         sayAI(esc(err.message),"bad");
     else                         sayAI("No ha salido un diseño válido. Prueba a describirlo con más detalle, o usa el encargo para GPT / Gemini.","bad");
   }finally{
-    if(mio === genN){ $("#gen").disabled = false; running = null; renderVariants(); }
+    if(mio === genN){ aterriza(); $("#gen").disabled = false; running = null; renderVariants(); }
   }
 }
 
@@ -1408,6 +1456,7 @@ $("#descartar").addEventListener("click", () => {
   if(state.designIdx < 0) return;
   state.designs.splice(state.designIdx, 1);
   state.designIdx = state.designs.length - 1;
+  guardarDisenos();
   if(state.designIdx >= 0){
     applyDesign(state.designs[state.designIdx]);
   }else{
@@ -1755,6 +1804,40 @@ $("#save-png").addEventListener("click", async () => {
   }catch(e){ say("No se ha podido componer la maqueta. Prueba con Imprimir.","bad"); }
 });
 
+/* ══ EL CAJÓN · los diseños sobreviven a cerrar la pestaña ═══════════════ */
+const DB_NOMBRE = "mesa-de-vinilo", DB_ALMACEN = "disenos";
+function abrirCajon(){
+  return new Promise(res => {
+    if(!window.indexedDB) return res(null);
+    let req;
+    try{ req = indexedDB.open(DB_NOMBRE, 1); }catch(_){ return res(null); }
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if(!db.objectStoreNames.contains(DB_ALMACEN)) db.createObjectStore(DB_ALMACEN);
+    };
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => res(null);
+    setTimeout(() => res(null), 3000);
+  });
+}
+async function guardarDisenos(){
+  try{
+    const db = await abrirCajon(); if(!db) return;
+    const tx = db.transaction(DB_ALMACEN, "readwrite");
+    tx.objectStore(DB_ALMACEN).put(state.designs, "designs");
+  }catch(_){}
+}
+async function leerDisenos(){
+  try{
+    const db = await abrirCajon(); if(!db) return null;
+    return await new Promise(res => {
+      const r = db.transaction(DB_ALMACEN, "readonly").objectStore(DB_ALMACEN).get("designs");
+      r.onsuccess = () => res(r.result || null);
+      r.onerror = () => res(null);
+    });
+  }catch(_){ return null; }
+}
+
 /* ══ PORTADA Y TUTORIAL ═══════════════════════════════════════════════════ */
 const SEEN = "mdv-visto-v1", LS_CLAVE = "mdv-clave";
 function remember(k, v){ try{ localStorage.setItem(k, v); }catch(_){} }
@@ -1979,6 +2062,16 @@ $("#ficha-print").addEventListener("click", () => {
 renderPresets();
 renderAll();
 renderVariants();
+
+leerDisenos().then(guardados => {
+  if(!Array.isArray(guardados) || !guardados.length) return;
+  state.designs = guardados;
+  state.designIdx = -1;          // no se aplica solo; él elige cuál
+  renderVariants();
+  const n = guardados.length;
+  sayAI(`Tienes ${n} ${n === 1 ? "versión guardada" : "versiones guardadas"} de antes. `
+      + `Están abajo en <b>Tus versiones</b>: toca una para ponerla.`);
+}).catch(() => {});
 
 const use = n => (typeof claude !== "undefined" && claude && typeof claude.use === "function")
   ? claude.use(n) : Promise.resolve(null);

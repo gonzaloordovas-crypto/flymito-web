@@ -597,7 +597,7 @@ p.paso .np{
     </div>
     <div class="rows" style="grid-template-columns:1fr">
       <div class="ancho"><div class="k">Usuario</div>
-        <input type="text" id="pt-user" value="fly" autocomplete="username" spellcheck="false"></div>
+        <input type="text" id="pt-user" value="" autocomplete="username" spellcheck="false"></div>
       <div class="ancho"><div class="k">Contraseña</div>
         <input type="password" id="pt-pass" autocomplete="current-password"></div>
     </div>
@@ -2526,6 +2526,11 @@ function pasaAdentro(){
   try{
     const r = await fetch("../acceso.json", {cache:"no-store"});
     if(!r.ok) throw 0;
+    // El usuario se LEE de su fichero, no se escribe aquí a mano: si algún día
+    // lo cambia en el gestor, el taller le seguiría pidiendo el viejo y no
+    // entraría nunca, sin ninguna pista de por qué.
+    const o = await r.json();
+    if(o && o.user) $("#pt-user").value = o.user;
   }catch(_){ pasaAdentro(); return; }
 
   puerta.hidden = false;

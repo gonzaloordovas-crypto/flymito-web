@@ -2497,7 +2497,8 @@ async function subeDiseno(d, thumb){
     await bib("POST", {
       diseno: Object.assign({}, d, {panels: solo, thumb: thumb || d.thumb || null}),
       primera: i === 0,
-      parcial: i < zonas.length - 1
+      parcial: i < zonas.length - 1,
+      zonas                                  // el servidor solo ve trozos sueltos
     });
   }
   idsArriba.add(d.id);
@@ -2550,7 +2551,20 @@ function miniaturaDe(p){
 
 // Los paneles pesan: solo se traen cuando de verdad se van a usar.
 async function traerPaneles(d){
-  if(d.panels || !d.url) return d;
+  if(d.panels) return d;
+  // Formato nuevo: un fichero por panel, se piden a la vez.
+  if(d.base && Array.isArray(d.zonas) && d.zonas.length){
+    const out = {};
+    await Promise.all(d.zonas.map(async z => {
+      try{
+        const r = await fetch(`${d.base}/${z}.json`);
+        if(r.ok) out[z] = await r.json();
+      }catch(_){}
+    }));
+    if(Object.keys(out).length) d.panels = out;
+    return d;
+  }
+  if(!d.url) return d;                        // formato viejo: todo en uno
   const r = await fetch(d.url);
   if(r.ok) d.panels = await r.json();
   return d;
@@ -2880,10 +2894,22 @@ let idsArriba = new Set();
 // FUSIONAR, nunca reemplazar. Antes lo remoto hacía `state.designs = lista` y
 // se comía lo local: bastaba un diseño en la biblioteca para que el siguiente
 // guardado borrase del cajón todo lo que solo estaba en este aparato.
+// Cuántas caras tiene: las que lleva puestas, o las que dice el índice.
+function cuantasCaras(d){
+  if(!d) return 0;
+  if(d.panels) return Object.keys(d.panels).length;
+  return Array.isArray(d.zonas) ? d.zonas.length : 0;
+}
 function fusiona(remotos, locales){
   const por = new Map();
   (locales || []).forEach(d => { if(d && d.id) por.set(d.id, d); });
-  (remotos || []).forEach(d => { if(d && d.id) por.set(d.id, d); });   // arriba manda
+  (remotos || []).forEach(d => {
+    if(!d || !d.id) return;
+    const mio = por.get(d.id);
+    // Gana el que tenga MÁS caras, no el de arriba. Una subida que perdió
+    // paneles no puede sustituir a la copia entera que hay en este aparato.
+    por.set(d.id, (mio && cuantasCaras(mio) > cuantasCaras(d)) ? mio : d);
+  });
   return [...por.values()].sort((a, b) => (a.fecha || 0) - (b.fecha || 0));
 }
 
@@ -2903,7 +2929,10 @@ function pintaGuardados(lista, compartida){
 /** Los que tiene aquí y no ha visto nadie más. */
 function pendientesDeSubir(){
   if(!bibViva) return [];
-  return state.designs.filter(d => d && d.id && d.panels && !idsArriba.has(d.id));
+  // Los que no están, y los que están MANCOS: si aquí tengo más caras que
+  // arriba, arriba se subió a medias y hay que rehacerlo.
+  return state.designs.filter(d => d && d.id && d.panels
+    && (!idsArriba.has(d.id) || Object.keys(d.panels).length > (Array.isArray(d.zonas) ? d.zonas.length : 0)));
 }
 
 // Los diseños subidos antes de que se supiera hacer miniatura de un SVG están

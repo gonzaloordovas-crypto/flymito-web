@@ -161,6 +161,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 .hint b{color:var(--ink-2);font-weight:500}
 
 /* generador */
+textarea#prompt-base{
+  width:100%;min-height:190px;resize:vertical;background:var(--panel);
+  border:1px solid var(--rule-2);border-radius:3px;padding:9px 10px;margin-top:4px;
+  font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.55;
+}
+#promptzona{margin-top:11px;padding-top:11px;border-top:1px solid var(--rule)}
+#prompt-ej{font-size:10px;color:var(--ink-3);line-height:1.5}
 textarea#brief{
   width:100%;min-height:74px;resize:vertical;background:var(--panel);
   border:1px solid var(--rule-2);border-radius:3px;padding:9px 10px;
@@ -568,18 +575,25 @@ p.paso .np{
       <p class="hint">Ejemplos: al tocarlos se escribe el texto. <b>El primero ya está dibujado</b> y se pone al momento.</p>
       <div class="ideas" id="ideas"></div>
 
-      <p class="paso"><span class="np">2</span> Consigue el dibujo</p>
+      <p class="paso"><span class="np">2</span> Genera</p>
       <div class="acts">
-        <button class="act go" id="prompt"><span class="k">↗</span> Copiar el encargo para GPT / Gemini</button>
-        <button class="act" id="gen"><span class="k">✦</span> Dibujarlo aquí mismo</button>
+        <button class="act go" id="gen"><span class="k">✦</span> Generación legendaria</button>
+        <button class="act" id="verprompt"><span class="k">⌥</span> Ver y editar el encargo</button>
         <button class="act" id="again" disabled><span class="k">↻</span> Otra versión</button>
+        <button class="act" id="descartar" hidden><span class="k">✕</span> Descartar esta versión</button>
       </div>
       <div class="row" id="claveRow" hidden>
         <label for="clave">Clave</label>
         <input type="password" id="clave" placeholder="La del generador" autocomplete="off">
       </div>
+      <div id="promptzona" hidden>
+        <p class="hint">Esto es <b>exactamente</b> lo que se le manda a Gemini. Puedes cambiarlo.</p>
+        <textarea id="prompt-base" spellcheck="false"></textarea>
+        <p class="hint">Y a cada panel se le añade su medida:<br>
+          <span class="mono" id="prompt-ej"></span></p>
+        <button class="idea" id="prompt-reset">Volver al original</button>
+      </div>
       <p class="msg" id="aimsg"></p>
-      <div id="promptbox"></div>
 
       <p class="paso" id="pasoVar" hidden><span class="np">3</span> Tus versiones</p>
       <div class="variants" id="variants"></div>
@@ -604,7 +618,7 @@ p.paso .np{
     </section>
 
     <section class="sec">
-      <h2>Acabados lisos</h2>
+      <h2>Poner en todas las caras</h2>
       <div class="presets" id="presets"></div>
     </section>
 
@@ -679,7 +693,7 @@ const VIEWS = [
 const STD = {half:{w:301,h:1030,d:405}, full:{w:301,h:1030,d:810}};
 
 /* Ruta que genera los diseños con Gemini. La clave NO está aquí: vive en el
-   servidor de esa ruta. Vacío = el botón «Dibujarlo aquí mismo» no se enseña. */
+   servidor de esa ruta. Vacío = el botón de generar no se enseña. */
 const API_DISENO = "https://mesa-de-vinilo-api.vercel.app/api/disenar";
 
 const FINISHES = [
@@ -927,14 +941,8 @@ const SNOOPY = {
 };
 
 const PRESETS = [
-  {name:"Aluminio", chip:"linear-gradient(135deg,#D2D8D6,#AEB6B3)", apply:z => Object.assign(z,newFinish())},
+  {name:"Aluminio · sin vinilar", chip:"linear-gradient(135deg,#D2D8D6,#AEB6B3)", apply:z => Object.assign(z,newFinish())},
   {name:"Damero negro", chip:"#1C1F21", apply:(z,id) => {Object.assign(z,newFinish()); if(id!=="tapa") z.type="damneg";}},
-  {name:"Gulf", chip:"linear-gradient(90deg,#8ED3E4 38%,#F26722 38% 62%,#8ED3E4 62%)", apply:(z,id) => {
-      Object.assign(z,newFinish()); if(id==="tapa") return;
-      z.type="rayas"; z.color="#8ED3E4"; z.color2="#F26722"; z.stripes=1; z.sw=120; z.dir="v";}},
-  {name:"Rojiblanco", chip:"linear-gradient(90deg,#CE3524 20%,#F2F2F2 20% 40%,#CE3524 40% 60%,#F2F2F2 60% 80%,#CE3524 80%)", apply:(z,id) => {
-      Object.assign(z,newFinish()); if(id==="tapa") return;
-      z.type="rayas"; z.color="#F2F2F2"; z.color2="#CE3524"; z.stripes=4; z.sw=46; z.dir="v";}}
 ];
 
 const IDEAS = [
@@ -1092,7 +1100,7 @@ document.addEventListener("click", e => {
       sayAI("<b>As del aire</b> puesto en los cinco paneles. Cambia cualquiera desde su zona.","ok");
     }else{
       $("#brief").focus();
-      sayAI("Escrito. Ahora dale a <b>Copiar el encargo</b> para llevártelo a GPT o Gemini.");
+      sayAI("Escrito. Ahora dale a <b>Generación legendaria</b>.");
     }
     return;
   }
@@ -1183,6 +1191,48 @@ const AI_ZONES = [
   {id:"trasera",    nombre:"trasera",           nota:"panel muy vertical, más sobrio"}
 ];
 
+// La dirección creativa, que es lo que se edita. A cada panel se le pega
+// después su línea de medidas: eso no se toca, es geometría.
+function baseDefecto(tema){
+  return [
+    "Diseño gráfico plano para vinilar el panel de un carro de avión.",
+    "",
+    "TEMA: " + tema,
+    "",
+    "OBLIGATORIO:",
+    "- Arte plano y frontal, como el vinilo impreso extendido sobre la mesa.",
+    "- NO dibujes el carro, ni marcos de aluminio, ni ruedas, ni bisagras, ni",
+    "  cierres, ni asas. Solo el gráfico.",
+    "- Sin perspectiva, sin maqueta, sin sombras de objeto, sin fondo de estudio.",
+    "- A sangre: el diseño llega al borde por los cuatro lados, sin márgenes",
+    "  blancos ni marcos.",
+    "- Colores planos y contundentes, del mundo del tema.",
+    "- Los cinco paneles son un mismo trabajo: misma paleta y mismo lenguaje."
+  ].join("\n");
+}
+
+function lineaPanel(z){
+  const mm = zoneMM(z.id);
+  const forma = mm.h > mm.w * 1.6 ? "muy vertical y estrecho"
+              : mm.w > mm.h * 1.3 ? "apaisado" : "casi cuadrado";
+  return `PANEL: "${z.nombre}", ${mm.w} × ${mm.h} mm — formato ${forma} `
+       + `(proporción ${(mm.w / mm.h).toFixed(2)} a 1). Compón PARA ESA FORMA.`;
+}
+
+// Si lo ha tocado a mano, manda lo suyo. Si no, se rehace con el tema de arriba.
+let promptTocado = false;
+function baseActual(){
+  const ta = $("#prompt-base");
+  if(promptTocado && ta && ta.value.trim()) return ta.value;
+  return baseDefecto(briefText());
+}
+function pintarPrompt(){
+  const ta = $("#prompt-base");
+  if(!ta) return;
+  if(!promptTocado) ta.value = baseDefecto(briefText());
+  $("#prompt-ej").textContent = lineaPanel(AI_ZONES[2]);
+}
+
 function briefText(){
   const b = $("#brief").value.trim();
   return b || $("#brief").placeholder;
@@ -1226,6 +1276,7 @@ function applyDesign(d){
 function renderVariants(){
   const box = $("#variants");
   $("#pasoVar").hidden = !state.designs.length;
+  $("#descartar").hidden = state.designIdx < 0;
   box.innerHTML = state.designs.map((d,i) => {
     const a = d.panels["lat-izq"];
     const th = !a ? `<span class="vthumb"></span>`
@@ -1290,13 +1341,15 @@ Reglas del SVG, sin excepción:
         sayAI("Escribe la clave del generador y vuelve a darle.","bad");
         throw {code:"cancelled"};
       }
+      const base = baseActual();
       const libres = AI_ZONES.filter(z => !state.zones[z.id].lock);
       const r = await fetch(API_DISENO, {
         method:"POST", signal:ctrl.signal,
         headers:{"Content-Type":"application/json", "X-Acceso":clave},
         body: JSON.stringify({brief, paneles: libres.map(z => {
           const mm = zoneMM(z.id);
-          return {id:z.id, nombre:z.nombre, w:mm.w, h:mm.h};
+          return {id:z.id, nombre:z.nombre, w:mm.w, h:mm.h,
+                  prompt: base + "\n\n" + lineaPanel(z)};
         })})
       });
       const j = await r.json().catch(() => ({}));
@@ -1341,45 +1394,32 @@ Reglas del SVG, sin excepción:
   }
 }
 
+$("#verprompt").addEventListener("click", () => {
+  const z = $("#promptzona");
+  z.hidden = !z.hidden;
+  if(!z.hidden){ pintarPrompt(); $("#prompt-base").focus(); }
+});
+$("#prompt-base").addEventListener("input", () => { promptTocado = true; });
+$("#prompt-reset").addEventListener("click", () => { promptTocado = false; pintarPrompt(); });
+$("#brief").addEventListener("input", () => { if(!promptTocado) pintarPrompt(); });
+
+// Descartar = volver a la versión anterior, o al aluminio si no había ninguna.
+$("#descartar").addEventListener("click", () => {
+  if(state.designIdx < 0) return;
+  state.designs.splice(state.designIdx, 1);
+  state.designIdx = state.designs.length - 1;
+  if(state.designIdx >= 0){
+    applyDesign(state.designs[state.designIdx]);
+  }else{
+    Object.keys(state.zones).forEach(id => Object.assign(state.zones[id], newFinish()));
+    state.designName = null;
+  }
+  renderAll(); renderVariants();
+  sayAI("Descartada.");
+});
+
 $("#gen").addEventListener("click", () => generate(briefText()));
 $("#again").addEventListener("click", () => generate(state.lastBrief || briefText()));
-
-$("#prompt").addEventListener("click", () => {
-  const P = panels(), brief = briefText();
-  const lines = AI_ZONES.map(z => {
-    const mm = P[z.id] || P["frente"] || {w:245,h:974};
-    const r = (mm.w/mm.h);
-    return `${z.nombre.toUpperCase()} — ${Math.round(mm.w)} × ${Math.round(mm.h)} mm (proporción ${r.toFixed(2)}:1)`;
-  }).join("\n");
-  const txt =
-`Diseña ${AI_ZONES.length} imágenes que forman UN MISMO vinilo para un trolley de avión.
-
-TEMA: ${brief}
-
-PANELES (respeta la proporción de cada uno, a sangre, sin márgenes):
-${lines}
-
-OBLIGATORIO:
-- Arte PLANO y frontal, como si fuera el vinilo impreso extendido sobre la mesa.
-- NO dibujes el trolley, ni el carrito, ni marcos de aluminio, ni ruedas, ni
-  bisagras, ni cierres, ni asas. Solo el gráfico.
-- Sin perspectiva, sin sombras de objeto, sin maqueta ni mockup, sin fondo de estudio.
-- El diseño llega hasta el borde por los cuatro lados.
-- Misma paleta y mismo lenguaje gráfico en los cinco: se tienen que reconocer
-  como un solo trabajo.
-- El lateral izquierdo lleva el motivo principal a gran tamaño.
-
-Entrégalas por separado, una por panel.`;
-  const box = $("#promptbox");
-  box.textContent = txt; box.classList.add("on");
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(txt)
-      .then(() => sayAI("Prompt copiado al portapapeles. Pégalo en GPT o Gemini, y luego sube cada imagen en su zona.","ok"))
-      .catch(() => sayAI("Ahí tienes el prompt: cópialo a mano y pégalo en GPT o Gemini."));
-  }else{
-    sayAI("Ahí tienes el prompt: cópialo a mano y pégalo en GPT o Gemini.");
-  }
-});
 
 /* ══ VOLUMEN ══════════════════════════════════════════════════════════════
    Caja de aluminio con los paneles como texturas. El marco NO se pinta: es
@@ -1777,19 +1817,23 @@ diseño, así que es imposible taparlo sin querer.</div>`},
   {t:"El diseño, en dos pasos", sel:".sec.ai", html:
 `<p><b>Paso 1</b> — escribe de qué va, en una frase. Los ejemplos de debajo te
 rellenan el cuadro; el que lleva punto naranja <b>ya viene dibujado</b> y se pone
-en el trolley nada más tocarlo, para que veas de qué va esto.</p>
-<p><b>Paso 2</b> — <b>Copiar el encargo para GPT / Gemini</b> te escribe el
-pedido con la proporción exacta de cada panel y te lo deja en el portapapeles.
-Lo pegas allí, generas, y vuelves aquí a subir cada imagen.</p>
-<div class="keyline">Para subirla: abre la zona que quieras, elige <b>Imagen</b>,
-y ahí mismo puedes moverla y ampliarla hasta que encaje.</div>`},
+en el trolley nada más tocarlo.</p>
+<p><b>Paso 2</b> — <b>Generación legendaria</b>. Se le pide a Gemini un dibujo
+por panel, cada uno compuesto para la forma de su panel, y se ponen solos en el
+trolley. Tarda un poco: son cinco imágenes.</p>
+<div class="keyline">La primera vez te pedirá una <b>clave</b>. Es la del
+generador, no la de nada más. Se escribe una vez y el navegador la recuerda.</div>`},
 
-  {t:"Dibujarlo aquí mismo", sel:".sec.ai", html:
-`<p>Hay un segundo botón, <b>Dibujarlo aquí mismo</b>, que pinta los cinco
-paneles de golpe sin salir de la herramienta. <b>Todavía no está conectado</b>:
-le falta la clave del generador de imágenes.</p>
-<p>Cuando lo esté, aparecerá solo, con un <b>candado por panel</b> para fijar los
-que ya te gusten y pedir otra versión de los demás.</p>`},
+  {t:"El encargo se puede tocar", sel:".sec.ai", html:
+`<p><b>Ver y editar el encargo</b> te enseña, palabra por palabra, lo que se le
+manda a Gemini. No es un resumen: <b>es el texto exacto</b>. Si quieres mandar
+otra cosa, lo cambias ahí y se manda lo tuyo.</p>
+<p>Debajo verás en gris la línea que se le añade a cada panel con su medida.
+Esa no se toca: es geometría, y es lo que hace que el lateral no venga compuesto
+como si fuera cuadrado.</p>
+<div class="keyline">¿Un panel ya te gusta? <b>Candado</b> en su zona, y
+<b>Otra versión</b> respeta ese y cambia los demás. Si no te convence nada,
+<b>Descartar</b> te devuelve al anterior.</div>`},
 
   {t:"Tres formas de verlo", sel:null, html:
 `<p><b>Maqueta</b> — las cuatro caras en foto real, para enseñárselo al cliente.</p>

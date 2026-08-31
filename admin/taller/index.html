@@ -241,16 +241,6 @@ p.paso .np{
 .idea.listo::before{content:"";display:inline-block;width:5px;height:5px;border-radius:99px;
   background:var(--focus);margin-right:6px;vertical-align:middle}
 
-.presets{display:grid;grid-template-columns:1fr;gap:7px}
-.preset{
-  display:flex;align-items:center;gap:9px;cursor:pointer;background:var(--panel-2);
-  border:1px solid transparent;border-radius:3px;padding:7px 9px;text-align:left;
-  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:500;
-  letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);
-  transition:border-color .15s,color .15s;
-}
-.preset:hover{border-color:var(--rule-2);color:var(--ink)}
-.chip{width:16px;height:16px;border-radius:2px;flex:none;border:1px solid rgba(0,0,0,.22)}
 
 .zone{border:1px solid var(--rule);border-radius:4px;margin-bottom:8px;background:var(--panel-2);overflow:hidden}
 .zone.on{border-color:var(--rule-2)}
@@ -501,7 +491,6 @@ p.paso .np{
   .zlock{padding:8px 11px;font-size:13px}
   .ztitle{padding:14px 11px}
   .tick{width:32px;height:32px}
-  .preset{padding:11px 10px}
   .row input[type=color]{width:44px;height:34px}
   .row input[type=number],.row select,.row input[type=text],.row input[type=password]{padding:10px 8px}
   .row input[type=range]{height:28px}
@@ -515,7 +504,6 @@ p.paso .np{
   .benchbar{gap:12px;padding:10px 14px;font-size:10px}
   .placard ul{column-count:1}
   .fichagrid{grid-template-columns:1fr}
-  .presets{grid-template-columns:1fr}
   .variants{grid-template-columns:repeat(auto-fill,minmax(84px,1fr))}
   .pass .rows{grid-template-columns:1fr;gap:12px}
   .pass .big .n{font-size:clamp(80px,26vw,120px)}
@@ -706,11 +694,6 @@ p.paso .np{
     </section>
 
     <section class="sec">
-      <h2>Poner en todas las caras</h2>
-      <div class="presets" id="presets"></div>
-    </section>
-
-    <section class="sec">
       <h2>Zonas de vinilo</h2>
       <div id="zones"></div>
     </section>
@@ -793,8 +776,11 @@ const FINISHES = [
   {id:"imagen", name:"Imagen"}
 ];
 
-function newFinish(){
-  return {type:"alu", color:"#1B1E20", color2:"#F26722", stripes:1, sw:120,
+// Sin diseño, el carro se ve como los de verdad: damero metalizado en las
+// caras y la tapa en su aluminio.
+function newFinish(id){
+  return {type: id === "tapa" ? "alu" : "dampla",
+          color:"#1B1E20", color2:"#F26722", stripes:1, sw:120,
           dir:"v", img:null, fit:"cover", zoom:1, ox:0, oy:0,
           svg:null, vb:"0 0 1000 1000", lock:false};
 }
@@ -807,7 +793,7 @@ const state = {
   zones:{}
 };
 ["lat-izq","lat-der","frente","frente-sup","frente-inf","trasera","tapa"]
-  .forEach(id => state.zones[id] = newFinish());
+  .forEach(id => state.zones[id] = newFinish(id));
 
 /* ══ PANELES ══════════════════════════════════════════════════════════════ */
 function panels(){
@@ -1028,10 +1014,6 @@ const SNOOPY = {
   }
 };
 
-const PRESETS = [
-  {name:"Damero metalizado", chip:"repeating-linear-gradient(45deg,#B9C0BE 0 5px,#E6EBE9 5px 8px)",
-   apply:(z,id) => { Object.assign(z, newFinish()); if(id !== "tapa") z.type = "dampla"; }}
-];
 
 const IDEAS = [
   {c:"Snoopy",     t:"Snoopy piloto con gafas de aviador y bufanda, sobre cielo azul con nubes", listo:true},
@@ -1055,8 +1037,6 @@ function swatch(kind, f){
 }
 
 function renderPresets(){
-  $("#presets").innerHTML = PRESETS.map((p,i) =>
-    `<button class="preset" data-preset="${i}"><span class="chip" style="background:${p.chip}"></span>${p.name}</button>`).join("");
   $("#ideas").innerHTML = IDEAS.map((o,i) =>
     `<button class="idea${o.listo ? " listo" : ""}" data-idea="${i}" `
    + `title="${o.listo ? "Ya está dibujado: se pone al momento" : "Escribe el texto en el cuadro"}">${o.c}</button>`).join("");
@@ -1165,17 +1145,6 @@ document.addEventListener("click", e => {
     renderAll(); return;
   }
   if(t.dataset.latch){ state.latch = t.dataset.latch; state.open = null; renderAll(); return; }
-  if(t.dataset.preset !== undefined){
-    const p = PRESETS[+t.dataset.preset];
-    if(p.design){
-      if(state.designs[state.designs.length-1] !== p.design) state.designs.push(p.design);
-      state.designIdx = state.designs.length - 1;
-      applyDesign(p.design);
-      renderAll(); renderVariants(); return;
-    }
-    Object.keys(state.zones).forEach(id => p.apply(state.zones[id], id));
-    state.designName = null; renderAll(); renderVariants(); return;
-  }
   if(t.dataset.idea !== undefined){
     const idea = IDEAS[+t.dataset.idea];
     $("#brief").value = idea.t;
@@ -1561,7 +1530,7 @@ $("#descartar").addEventListener("click", () => {
   if(state.designIdx >= 0){
     applyDesign(state.designs[state.designIdx]);
   }else{
-    Object.keys(state.zones).forEach(id => Object.assign(state.zones[id], newFinish()));
+    Object.keys(state.zones).forEach(id => Object.assign(state.zones[id], newFinish(id)));
     state.designName = null;
   }
   renderAll(); renderVariants();
@@ -1675,10 +1644,10 @@ async function mount3D(){
   const tok = ++G.token;
   stage.innerHTML = '<canvas id="gl"></canvas><span class="glnote">Arrastra para girar · rueda para acercar</span>';
   const cv = $("#gl");
-  const size = () => {
-    const w = Math.max(280, stage.clientWidth);
-    return [w, w < 560 ? 360 : w < 980 ? 440 : 620];
-  };
+  // Se mide el LIENZO, que es quien manda: si calculo el alto por mi cuenta y
+  // el CSS decide otro, la imagen sale estirada.
+  const size = () => [Math.max(200, cv.clientWidth  || stage.clientWidth || 800),
+                      Math.max(200, cv.clientHeight || 620)];
   let [vw, vh] = size();
 
   const ren = new THREE.WebGLRenderer({canvas:cv, antialias:true, alpha:true, preserveDrawingBuffer:true});
@@ -1764,12 +1733,42 @@ async function mount3D(){
   await put("tapa",    iw, idp, [0, H/2+EPS, 0],  [-Math.PI/2, 0, 0]);
   if(tok !== G.token) return;
 
+  // Bisagras: cinco, en la arista de la puerta. Se ven en todas las fotos.
+  const bisagra = new THREE.MeshStandardMaterial({color:0xB4BCB9, metalness:.88, roughness:.28, envMapIntensity:1.2});
+  [0.34, 0.17, 0, -0.17, -0.34].forEach(t => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.058, 0.018), bisagra);
+    b.position.set(-W/2 + F*0.55, H * t, D/2 + 0.004);
+    rig.add(b);
+    const eje = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.062, 10), canto);
+    eje.position.set(-W/2 + F*0.55, H * t, D/2 + 0.012);
+    rig.add(eje);
+  });
+
+  // Tornillos en las cantoneras: cuatro por esquina vista.
+  const torn = new THREE.MeshStandardMaterial({color:0x8A9391, metalness:.9, roughness:.35});
+  [-1,1].forEach(a => [-1,1].forEach(b => {
+    [[a*(W/2 - CQ*0.30), b*(H/2 - CQ*0.30), D/2 + 0.003],
+     [a*(W/2 - CQ*0.72), b*(H/2 - CQ*0.30), D/2 + 0.003]].forEach(([x,y,z]) => {
+      const t2 = new THREE.Mesh(new THREE.CylinderGeometry(0.0042, 0.0042, 0.003, 10), torn);
+      t2.rotation.x = Math.PI/2; t2.position.set(x, y, z); rig.add(t2);
+    });
+  }));
+
+  // Junta de la puerta: la línea fina que separa la hoja del marco.
+  const junta = new THREE.Mesh(new THREE.BoxGeometry(iw + 0.004, 0.0025, 0.004),
+    new THREE.MeshStandardMaterial({color:0x6B7472, metalness:.5, roughness:.6}));
+  junta.position.set(0, topY - ih - 0.002, D/2 + 0.002); rig.add(junta);
+
   // Herraje: asa, castores y pedales.
-  const hb = new THREE.Mesh(new THREE.BoxGeometry(W-2*F-0.02, 0.015, 0.018), steel);
-  hb.position.set(0, H/2 + 0.042, D/2 - F - 0.022); rig.add(hb);
+  const asaZ = D/2 - F - 0.030, asaY = H/2 + 0.046;
+  const barra = new THREE.Mesh(new THREE.CylinderGeometry(0.0085, 0.0085, W - 2*F - 0.024, 14), steel);
+  barra.rotation.z = Math.PI/2; barra.position.set(0, asaY, asaZ); rig.add(barra);
   [-1,1].forEach(sx => {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.018), steel);
-    m.position.set(sx*(W/2-F-0.02), H/2 + 0.020, D/2 - F - 0.022); rig.add(m);
+    const x = sx*(W/2 - F - 0.012);
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(0.0085, 0.0085, 0.052, 14), steel);
+    m.position.set(x, H/2 + 0.022, asaZ); rig.add(m);
+    const pie = new THREE.Mesh(new THREE.BoxGeometry(0.026, 0.010, 0.030), canto);
+    pie.position.set(x, H/2 + 0.002, asaZ); rig.add(pie);
   });
   // Castor giratorio: pletina al bastidor, eje, horquilla, neumático y llanta.
   const WR = 0.030, WT = 0.011;          // radio de la llanta y grosor de la goma
@@ -1815,13 +1814,6 @@ async function mount3D(){
     new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc), transparent:true, depthWrite:false}));
   ao.rotation.x = -Math.PI/2; ao.position.y = -H/2 - 0.104; scene.add(ao);
 
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const place = () => {
-    const R = G.dist * H;
-    cam.position.set(R*Math.cos(G.pitch)*Math.sin(G.yaw), R*Math.sin(G.pitch), R*Math.cos(G.pitch)*Math.cos(G.yaw));
-    cam.lookAt(0, -H*0.05, 0);
-  };
-
   cv.addEventListener("pointerdown", e => {
     G.drag = {x:e.clientX, y:e.clientY}; G.spin = false;
     try{ cv.setPointerCapture(e.pointerId); }catch(_){}
@@ -1838,13 +1830,23 @@ async function mount3D(){
     G.dist = Math.max(1.15, Math.min(4.5, G.dist * (1 + e.deltaY * 0.0012)));
   }, {passive:false});
 
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const place = () => {
+    const R = G.dist * H;
+    cam.position.set(R*Math.cos(G.pitch)*Math.sin(G.yaw), R*Math.sin(G.pitch), R*Math.cos(G.pitch)*Math.cos(G.yaw));
+    cam.lookAt(0, -H*0.05, 0);
+  };
+
   if(window.ResizeObserver){
     G.ro = new ResizeObserver(() => {
       if(tok !== G.token) return;
-      [vw, vh] = size();
+      const [nw, nh] = size();
+      if(nw === vw && nh === vh) return;
+      vw = nw; vh = nh;
       ren.setSize(vw, vh, false); cam.aspect = vw/vh; cam.updateProjectionMatrix();
+      place(); ren.render(scene, cam);
     });
-    G.ro.observe(stage);
+    G.ro.observe(cv);
   }
 
   const loop = () => {

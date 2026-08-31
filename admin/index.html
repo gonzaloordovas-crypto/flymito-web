@@ -240,6 +240,18 @@ input[type=file]{display:none}
 .addbtn:active{border-style:solid}
 .addbtn svg{width:17px; height:17px}
 .tools{display:flex; gap:10px}
+  .placa.acceso{text-decoration:none; color:inherit; cursor:pointer;
+    transition:transform .18s ease, border-color .18s ease}
+  .placa.acceso:hover{transform:translateY(-2px)}
+  .placa.acceso .ico{flex:none; width:54px; height:54px; border-radius:10px;
+    display:grid; place-items:center; background:rgba(0,0,0,.34);
+    border:1px solid rgba(255,255,255,.10); color:#E8A33D}
+  .placa.acceso .texto b{display:flex; align-items:center; gap:9px; flex-wrap:wrap}
+  .placa.acceso .nuevo{font-style:normal; font-size:10px; letter-spacing:.14em;
+    text-transform:uppercase; padding:2px 8px; border-radius:99px;
+    background:#E8A33D; color:#0C1114}
+  .placa.acceso .flecha{margin-left:auto; flex:none; opacity:.5}
+  .placa.acceso .ico svg{width:26px; height:26px}
 .tools .btn{padding:15px 8px; font-size:10px; letter-spacing:.13em}
 
 .hist{display:flex; flex-direction:column; gap:10px}
@@ -445,6 +457,28 @@ input[type=file]{display:none}
           <small id="pielTxt">Los textos y el logotipo salen en blanco. Baja la palanca para pasarlos al gris de la marca.</small>
         </div>
       </div>
+    </div>
+    <div class="cabina" id="cabinaTaller">
+      <a class="placa acceso" href="taller/">
+        <span class="torn a"></span><span class="torn b"></span>
+        <span class="torn c"></span><span class="torn d"></span>
+        <span class="ico" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor"
+               stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="3" width="14" height="15" rx="1.5"/>
+            <path d="M5 9h14"/><path d="M9 3v15"/>
+            <circle cx="8" cy="20" r="1.6"/><circle cx="16" cy="20" r="1.6"/>
+          </svg>
+        </span>
+        <div class="texto">
+          <b>Mesa de Vinilo <i class="nuevo">Nuevo</i></b>
+          <small>Diseña el vinilado de un trolley, gíralo en volumen y saca la hoja
+                 de corte con los milímetros y los metros de rollo.</small>
+        </div>
+        <svg class="flecha" viewBox="0 0 24 24" width="20" height="20" fill="none"
+             stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+             stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+      </a>
     </div>
     <div class="tools">
       <button class="btn ghost" id="btnVer">Ver la web</button>

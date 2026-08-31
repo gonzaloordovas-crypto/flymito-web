@@ -50,6 +50,7 @@
 }
 
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 body{
   margin:0; background:var(--ground); color:var(--ink);
   font-family:Archivo,'Helvetica Neue',Helvetica,Arial,sans-serif;
@@ -532,7 +533,7 @@ p.paso .np{
   </div>
   <div class="tabs" role="tablist" aria-label="Vista">
     <button role="tab" id="tab-mock" aria-selected="true" data-view="mock">Maqueta</button>
-    <button role="tab" id="tab-3d" aria-selected="false" data-view="3d">Volumen</button>
+    <button role="tab" id="tab-3d" aria-selected="false" data-view="3d">3D</button>
     <button role="tab" id="tab-cut" aria-selected="false" data-view="cut">Hoja de corte</button>
   </div>
   <a class="backlink" href="../">← Gestor</a>
@@ -1015,7 +1016,7 @@ function renderReadout(){
   $("#ro-dims").textContent = `${d.w}×${d.h}×${d.d}`;
   $("#ro-area").textContent = `${pk.areaArt.toFixed(2)} m²`;
   $("#bb-scale").textContent = state.view === "mock" ? "Foto real 1035×1448"
-                             : state.view === "3d"   ? "Volumen · " + (state.model==="half"?"405":"810") + " de fondo"
+                             : state.view === "3d"   ? "3D · fondo " + (state.model==="half"?"405":"810") + " mm"
                              : "1:1 en mm";
   $("#bb-pieces").textContent = pk.pieces.length;
   $("#bb-area").textContent = `${pk.areaArt.toFixed(2)} m²`;
@@ -1382,6 +1383,32 @@ function texFromFinish(fin, wmm, hmm){
   });
 }
 
+// Un metal sin nada que reflejar se ve como plástico. Se le fabrica una sala:
+// techo claro, suelo oscuro y una franja de ventana que es la que da el brillo.
+function envCubo(){
+  const caras = [];
+  for(let i = 0; i < 6; i++){
+    const c = document.createElement("canvas"); c.width = c.height = 128;
+    const x = c.getContext("2d");
+    if(i === 2){ x.fillStyle = "#F2F6F7"; }
+    else if(i === 3){ x.fillStyle = "#23292B"; }
+    else {
+      const g = x.createLinearGradient(0, 0, 0, 128);
+      g.addColorStop(0, "#EAF0F2"); g.addColorStop(.5, "#98A3A7"); g.addColorStop(1, "#3A4245");
+      x.fillStyle = g;
+    }
+    x.fillRect(0, 0, 128, 128);
+    if(i !== 2 && i !== 3){
+      x.fillStyle = "rgba(255,255,255,.92)"; x.fillRect(0, 16, 128, 24);
+      x.fillStyle = "rgba(255,255,255,.35)"; x.fillRect(0, 52, 128, 8);
+    }
+    caras.push(c);
+  }
+  const t = new THREE.CubeTexture(caras);
+  t.encoding = THREE.sRGBEncoding; t.needsUpdate = true;
+  return t;
+}
+
 async function mount3D(){
   stop3D();
   stage.className = "stage d3";
@@ -1401,14 +1428,26 @@ async function mount3D(){
   ren.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   ren.setSize(vw, vh, false);
   ren.outputEncoding = THREE.sRGBEncoding;
+  ren.physicallyCorrectLights = true;
+  ren.shadowMap.enabled = true;
+  ren.shadowMap.type = THREE.PCFSoftShadowMap;
   G.ren = ren;
 
   const scene = new THREE.Scene(); G.scene = scene;
+  scene.environment = envCubo();          // lo que refleja el aluminio
   const cam = new THREE.PerspectiveCamera(34, vw/vh, .05, 60); G.cam = cam;
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x2C3335, .95));
-  const l1 = new THREE.DirectionalLight(0xffffff, .95); l1.position.set(2.4, 3.4, 2.6); scene.add(l1);
-  const l2 = new THREE.DirectionalLight(0xffffff, .42); l2.position.set(-2.6, 1.2, -1.8); scene.add(l2);
-  const l3 = new THREE.DirectionalLight(0xffffff, .30); l3.position.set(0.4, -1.6, 2.2); scene.add(l3);
+  scene.add(new THREE.HemisphereLight(0xE9EFF1, 0x2A3134, 1.5));
+  const l1 = new THREE.DirectionalLight(0xffffff, 2.6);
+  l1.position.set(1.9, 3.2, 2.4);
+  l1.castShadow = true;
+  l1.shadow.mapSize.set(1024, 1024);
+  l1.shadow.camera.near = .4; l1.shadow.camera.far = 9;
+  l1.shadow.camera.left = -1.4; l1.shadow.camera.right = 1.4;
+  l1.shadow.camera.top = 1.4;  l1.shadow.camera.bottom = -1.4;
+  l1.shadow.bias = -0.0012; l1.shadow.radius = 3;
+  scene.add(l1);
+  const l2 = new THREE.DirectionalLight(0xD8E4E8, .9); l2.position.set(-2.6, 1.4, -1.8); scene.add(l2);
+  const l3 = new THREE.DirectionalLight(0xffffff, .5);  l3.position.set(0.5, -1.4, 2.4); scene.add(l3);
 
   const d = state.dims, S = 0.001;
   const W = d.w*S, H = d.h*S, D = d.d*S, F = d.frame*S;
@@ -1416,18 +1455,37 @@ async function mount3D(){
   const iw = P.trasera.w*S, ih = P.trasera.h*S, idp = P["lat-izq"].w*S;
 
   const rig = new THREE.Group(); scene.add(rig);
-  const alu   = new THREE.MeshStandardMaterial({color:0xDCE2DF, metalness:.20, roughness:.44});
-  const steel = new THREE.MeshStandardMaterial({color:0xC3CAC7, metalness:.25, roughness:.34});
-  const dark  = new THREE.MeshStandardMaterial({color:0x3B4244, metalness:.25, roughness:.70});
-  rig.add(new THREE.Mesh(new THREE.BoxGeometry(W, H, D), alu));
+  const alu   = new THREE.MeshStandardMaterial({color:0xC9D0CD, metalness:.92, roughness:.30, envMapIntensity:1.15});
+  const perfil= new THREE.MeshStandardMaterial({color:0xD5DBD8, metalness:.95, roughness:.20, envMapIntensity:1.35});
+  const steel = new THREE.MeshStandardMaterial({color:0xC8CFCC, metalness:.88, roughness:.24, envMapIntensity:1.2});
+  const dark  = new THREE.MeshStandardMaterial({color:0x33393B, metalness:.15, roughness:.75});
 
-  const EPS = 0.0018;
+  // El cuerpo va METIDO: los perfiles del bastidor sobresalen, y por eso el
+  // panel queda hundido como en el trolley real.
+  const O = 0.006;
+  const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(W-2*O, H-2*O, D-2*O), alu);
+  cuerpo.castShadow = true; cuerpo.receiveShadow = true;
+  rig.add(cuerpo);
+
+  // Las doce vigas del bastidor.
+  const viga = (sx, sy, sz, px, py, pz) => {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), perfil);
+    m.position.set(px, py, pz); m.castShadow = true; m.receiveShadow = true;
+    rig.add(m);
+  };
+  const f2 = F/2, xx = W/2 - f2, yy = H/2 - f2, zz = D/2 - f2;
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b]) => viga(F, H, F, a*xx, 0, b*zz));   // montantes
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b]) => viga(W, F, F, 0, a*yy, b*zz));   // travesaños
+  [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([a,b]) => viga(F, F, D, a*xx, b*yy, 0));   // largueros
+
+  const EPS = 0.0018 - O;   // el cuerpo está metido O
   const put = async (id, gw, gh, pos, rot) => {
     const q = P[id]; if(!q) return;
     const t = await texFromFinish(state.zones[id], q.w, q.h);
     if(tok !== G.token) return;
     const m = new THREE.Mesh(new THREE.PlaneGeometry(gw, gh),
-      new THREE.MeshStandardMaterial({map:t, metalness:.05, roughness:.74}));
+      new THREE.MeshStandardMaterial({map:t, metalness:.04, roughness:.78, envMapIntensity:.35}));
+    m.receiveShadow = true;
     m.position.set(pos[0], pos[1], pos[2]);
     if(rot) m.rotation.set(rot[0], rot[1], rot[2]);
     rig.add(m);
@@ -1451,6 +1509,7 @@ async function mount3D(){
 
   // Herraje: asa, castores y pedales.
   const hb = new THREE.Mesh(new THREE.BoxGeometry(W-2*F-0.02, 0.015, 0.018), steel);
+  hb.castShadow = true;
   hb.position.set(0, H/2 + 0.042, D/2 - F - 0.022); rig.add(hb);
   [-1,1].forEach(sx => {
     const m = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.018), steel);
@@ -1459,10 +1518,10 @@ async function mount3D(){
   const WR = 0.042;
   [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([sx,sz]) => {
     const g = new THREE.Group();
-    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(WR, WR, 0.026, 20), dark);
-    cyl.rotation.z = Math.PI/2; g.add(cyl);
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(WR, WR, 0.026, 28), dark);
+    cyl.rotation.z = Math.PI/2; cyl.castShadow = true; g.add(cyl);
     const fork = new THREE.Mesh(new THREE.BoxGeometry(0.048, 0.05, 0.042), steel);
-    fork.position.y = WR + 0.020; g.add(fork);
+    fork.position.y = WR + 0.020; fork.castShadow = true; g.add(fork);
     g.position.set(sx*(W/2 - 0.036), -H/2 - WR - 0.010, sz*(D/2 - 0.036));
     rig.add(g);
   });
@@ -1472,15 +1531,22 @@ async function mount3D(){
     pd.position.set(sx*0.046, -H/2 - 0.010, D/2 + 0.014); rig.add(pd);
   });
 
-  // Sombra blanda en el suelo.
+  // Suelo invisible que solo recoge la sombra proyectada.
+  const suelo = new THREE.Mesh(new THREE.PlaneGeometry(6, 6),
+    new THREE.ShadowMaterial({opacity:.30}));
+  suelo.rotation.x = -Math.PI/2;
+  suelo.position.y = -H/2 - 2*WR - 0.010;
+  suelo.receiveShadow = true;
+  scene.add(suelo);
+  // Y un poco de oclusión justo debajo, que la sombra sola queda despegada.
   const sc = document.createElement("canvas"); sc.width = sc.height = 256;
   const sx2 = sc.getContext("2d");
-  const grad = sx2.createRadialGradient(128,128,8,128,128,126);
-  grad.addColorStop(0,"rgba(0,0,0,.42)"); grad.addColorStop(1,"rgba(0,0,0,0)");
+  const grad = sx2.createRadialGradient(128,128,6,128,128,124);
+  grad.addColorStop(0,"rgba(0,0,0,.34)"); grad.addColorStop(1,"rgba(0,0,0,0)");
   sx2.fillStyle = grad; sx2.fillRect(0,0,256,256);
-  const sh2 = new THREE.Mesh(new THREE.PlaneGeometry(W*4.2, D*3.0),
+  const ao = new THREE.Mesh(new THREE.PlaneGeometry(W*2.6, D*2.0),
     new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(sc), transparent:true, depthWrite:false}));
-  sh2.rotation.x = -Math.PI/2; sh2.position.y = -H/2 - 2*WR - 0.012; scene.add(sh2);
+  ao.rotation.x = -Math.PI/2; ao.position.y = suelo.position.y + 0.001; scene.add(ao);
 
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const place = () => {
@@ -1564,12 +1630,12 @@ $("#save-png").addEventListener("click", async () => {
     const cv = document.getElementById("gl");
     if(!cv){ say("El 3D no está montado.","bad"); return; }
     if(G.ren && G.scene && G.cam) G.ren.render(G.scene, G.cam);
-    cv.toBlob(bl => bl ? offer(`volumen-trolley-${stampName()}.png`, bl)
+    cv.toBlob(bl => bl ? offer(`3d-trolley-${stampName()}.png`, bl)
                        : say("No se ha podido generar el PNG.","bad"), "image/png");
     return;
   }
   const plates = Array.from(document.querySelectorAll(".plate"));
-  if(!plates.length){ say("Cambia a la vista Maqueta o Volumen para guardar una imagen.","bad"); return; }
+  if(!plates.length){ say("Cambia a la vista Maqueta o 3D para guardar una imagen.","bad"); return; }
   say("Componiendo la maqueta…");
   const SCALE = 0.62, PW = Math.round(PLATE.w*SCALE), PH = Math.round(PLATE.h*SCALE), GAP = 26;
   const c = document.createElement("canvas");
@@ -1680,7 +1746,7 @@ que ya te gusten y pedir otra versión de los demás.</p>`},
 
   {t:"Tres formas de verlo", sel:null, html:
 `<p><b>Maqueta</b> — las cuatro caras en foto real, para enseñárselo al cliente.</p>
-<p><b>Volumen</b> — el trolley en 3D; arrastra para girarlo, rueda para acercarte.</p>
+<p><b>3D</b> — el trolley en volumen; arrastra para girarlo, rueda para acercarte.</p>
 <p><b>Hoja de corte</b> — las piezas planas a tamaño real en milímetros, encajadas
 en el ancho de rollo, con la sangre y las marcas de esquina.</p>`},
 
@@ -1693,8 +1759,8 @@ cambia unos milímetros y esos milímetros son el vinilo que sobra o falta.</div
 
   {t:"Sacar del taller", sel:null, html:
 `<p><b>Guardar hoja de corte</b> te da el SVG que va a la cortadora.
-<b>Guardar maqueta</b> saca la imagen para el cliente — y en la vista Volumen,
-guarda el 3D.</p>
+<b>Guardar maqueta</b> saca la imagen para el cliente — y en la vista 3D,
+guarda el volumen.</p>
 <p><b>Ficha de pedido</b> reúne el trabajo en una hoja: piezas, metros de vinilo,
 horas y total. Pon tus precios y sale el presupuesto hecho.</p>`}
 ];

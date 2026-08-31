@@ -166,6 +166,16 @@ textarea#brief{
   font-size:13px;line-height:1.45;
 }
 textarea#brief::placeholder{color:var(--ink-3)}
+p.paso{
+  display:flex;align-items:center;gap:8px;margin:16px 0 8px;
+  font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2);
+}
+p.paso:first-of-type{margin-top:0}
+p.paso .np{
+  flex:none;width:17px;height:17px;border-radius:99px;background:var(--focus);
+  color:var(--panel);display:grid;place-items:center;font-size:9.5px;font-weight:600;
+}
 .ideas{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
 .variants{display:flex;gap:7px;margin-top:11px;overflow-x:auto;padding-bottom:3px}
 .variant{
@@ -186,6 +196,9 @@ textarea#brief::placeholder{color:var(--ink-3)}
   transition:border-color .15s,color .15s;
 }
 .idea:hover{border-color:var(--focus);color:var(--ink)}
+.idea.listo{border-color:var(--focus);color:var(--ink)}
+.idea.listo::before{content:"";display:inline-block;width:5px;height:5px;border-radius:99px;
+  background:var(--focus);margin-right:6px;vertical-align:middle}
 
 .presets{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
 .preset{
@@ -548,17 +561,23 @@ textarea#brief::placeholder{color:var(--ink-3)}
 
   <aside class="rail">
     <section class="sec ai">
-      <h2>Pide el diseño</h2>
+      <h2>Diseño</h2>
+      <p class="paso"><span class="np">1</span> Di de qué va</p>
       <textarea id="brief" placeholder="Snoopy piloto, con gafas de aviador y bufanda, sobre cielo azul con nubes"></textarea>
+      <p class="hint">Ejemplos: al tocarlos se escribe el texto. <b>El primero ya está dibujado</b> y se pone al momento.</p>
       <div class="ideas" id="ideas"></div>
-      <div class="acts" style="margin-top:10px">
-        <button class="act go" id="gen"><span class="k">✦</span> Diseñar los cinco paneles</button>
-        <button class="act" id="again" disabled><span class="k">↻</span> Otra versión del mismo tema</button>
-        <button class="act" id="prompt"><span class="k">↗</span> Escribir prompt para GPT / Gemini</button>
+
+      <p class="paso"><span class="np">2</span> Consigue el dibujo</p>
+      <div class="acts">
+        <button class="act go" id="prompt"><span class="k">↗</span> Copiar el encargo para GPT / Gemini</button>
+        <button class="act" id="gen"><span class="k">✦</span> Dibujarlo aquí mismo</button>
+        <button class="act" id="again" disabled><span class="k">↻</span> Otra versión</button>
       </div>
       <p class="msg" id="aimsg"></p>
-      <div class="variants" id="variants"></div>
       <div id="promptbox"></div>
+
+      <p class="paso" id="pasoVar" hidden><span class="np">3</span> Tus versiones</p>
+      <div class="variants" id="variants"></div>
     </section>
 
     <section class="sec">
@@ -580,7 +599,7 @@ textarea#brief::placeholder{color:var(--ink-3)}
     </section>
 
     <section class="sec">
-      <h2>Acabados de partida</h2>
+      <h2>Acabados lisos</h2>
       <div class="presets" id="presets"></div>
     </section>
 
@@ -906,12 +925,11 @@ const PRESETS = [
       z.type="rayas"; z.color="#8ED3E4"; z.color2="#F26722"; z.stripes=1; z.sw=120; z.dir="v";}},
   {name:"Rojiblanco", chip:"linear-gradient(90deg,#CE3524 20%,#F2F2F2 20% 40%,#CE3524 40% 60%,#F2F2F2 60% 80%,#CE3524 80%)", apply:(z,id) => {
       Object.assign(z,newFinish()); if(id==="tapa") return;
-      z.type="rayas"; z.color="#F2F2F2"; z.color2="#CE3524"; z.stripes=4; z.sw=46; z.dir="v";}},
-  {name:"As del aire", chip:"linear-gradient(160deg,#1F5E92,#4A9BD1 55%,#D8402A 55%)", design:SNOOPY}
+      z.type="rayas"; z.color="#F2F2F2"; z.color2="#CE3524"; z.stripes=4; z.sw=46; z.dir="v";}}
 ];
 
 const IDEAS = [
-  {c:"Snoopy",     t:"Snoopy piloto con gafas de aviador y bufanda, sobre cielo azul con nubes"},
+  {c:"Snoopy",     t:"Snoopy piloto con gafas de aviador y bufanda, sobre cielo azul con nubes", listo:true},
   {c:"Pop art",    t:"Pop art de los sesenta: viñeta de cómic con onomatopeyas y trama de puntos"},
   {c:"Aviación",   t:"Cartel de línea aérea de los años cincuenta, elegante y con mucho color"},
   {c:"Motorsport", t:"Motorsport: bandera de cuadros, dorsal enorme y franjas longitudinales"},
@@ -935,7 +953,8 @@ function renderPresets(){
   $("#presets").innerHTML = PRESETS.map((p,i) =>
     `<button class="preset" data-preset="${i}"><span class="chip" style="background:${p.chip}"></span>${p.name}</button>`).join("");
   $("#ideas").innerHTML = IDEAS.map((o,i) =>
-    `<button class="idea" data-idea="${i}">${o.c}</button>`).join("");
+    `<button class="idea${o.listo ? " listo" : ""}" data-idea="${i}" `
+   + `title="${o.listo ? "Ya está dibujado: se pone al momento" : "Escribe el texto en el cuadro"}">${o.c}</button>`).join("");
 }
 
 function renderZones(){
@@ -1052,7 +1071,22 @@ document.addEventListener("click", e => {
     Object.keys(state.zones).forEach(id => p.apply(state.zones[id], id));
     state.designName = null; renderAll(); renderVariants(); return;
   }
-  if(t.dataset.idea !== undefined){ $("#brief").value = IDEAS[+t.dataset.idea].t; $("#brief").focus(); return; }
+  if(t.dataset.idea !== undefined){
+    const idea = IDEAS[+t.dataset.idea];
+    $("#brief").value = idea.t;
+    if(idea.listo){
+      // Este tema ya viene dibujado: se aplica y se ve, en vez de dejar
+      // al usuario delante de un cuadro de texto sin que pase nada.
+      if(state.designs[state.designs.length-1] !== SNOOPY) state.designs.push(SNOOPY);
+      state.designIdx = state.designs.length - 1;
+      applyDesign(SNOOPY); renderAll(); renderVariants();
+      sayAI("<b>As del aire</b> puesto en los cinco paneles. Cambia cualquiera desde su zona.","ok");
+    }else{
+      $("#brief").focus();
+      sayAI("Escrito. Ahora dale a <b>Copiar el encargo</b> para llevártelo a GPT o Gemini.");
+    }
+    return;
+  }
   if(t.dataset.lock){ const f = state.zones[t.dataset.lock]; f.lock = !f.lock; renderZones(); return; }
   if(t.dataset.variant !== undefined){
     state.designIdx = +t.dataset.variant;
@@ -1176,6 +1210,7 @@ function applyDesign(d){
 
 function renderVariants(){
   const box = $("#variants");
+  $("#pasoVar").hidden = !state.designs.length;
   box.innerHTML = state.designs.map((d,i) => {
     const a = d.panels["lat-izq"];
     const th = a ? `<svg class="vthumb" viewBox="${a.vb}" preserveAspectRatio="xMidYMid slice">${a.svg}</svg>`
@@ -1188,7 +1223,7 @@ function renderVariants(){
 
 let genN = 0;
 async function generate(brief){
-  if(!sample){ sayAI("El generador automático todavía no está conectado aquí. Usa «Escribir prompt para GPT / Gemini» y sube la imagen en cada zona.","bad"); return; }
+  if(!sample){ sayAI("El generador no está disponible en esta ventana. Puedes seguir subiendo imágenes a mano en cada zona.","bad"); return; }
   if(running){ running.abort(); running = null; }
   const mio = ++genN;
   const ctrl = new AbortController(); running = ctrl;
@@ -1626,19 +1661,22 @@ y el frontal, que va partido en dos porque en medio está la franja del cierre.<
 <div class="keyline">Aquí eso no es un aviso: el herraje se dibuja por encima del
 diseño, así que es imposible taparlo sin querer.</div>`},
 
-  {t:"Pide el diseño", sel:".sec.ai", html:
-`<p>Escribe el tema en una frase — «Snoopy piloto con bufanda» — y dale a
-<b>Diseñar los cinco paneles</b>. Se pintan de golpe y coordinados entre sí.</p>
-<p><b>Otra versión del mismo tema</b> te da alternativas sin reescribir nada; se
-guardan como miniaturas y puedes volver a cualquiera.</p>
-<div class="keyline">¿Un panel ya te gusta? Ponle el <b>candado</b> en su zona y las
-siguientes versiones no lo tocan. Así vas fijando el conjunto de uno en uno.</div>`},
+  {t:"El diseño, en dos pasos", sel:".sec.ai", html:
+`<p><b>Paso 1</b> — escribe de qué va, en una frase. Los ejemplos de debajo te
+rellenan el cuadro; el que lleva punto naranja <b>ya viene dibujado</b> y se pone
+en el trolley nada más tocarlo, para que veas de qué va esto.</p>
+<p><b>Paso 2</b> — <b>Copiar el encargo para GPT / Gemini</b> te escribe el
+pedido con la proporción exacta de cada panel y te lo deja en el portapapeles.
+Lo pegas allí, generas, y vuelves aquí a subir cada imagen.</p>
+<div class="keyline">Para subirla: abre la zona que quieras, elige <b>Imagen</b>,
+y ahí mismo puedes moverla y ampliarla hasta que encaje.</div>`},
 
-  {t:"Con GPT o Gemini", sel:".sec.ai", html:
-`<p>Si quieres una imagen fotográfica, dale a <b>Escribir prompt para GPT / Gemini</b>:
-te compone el encargo con la proporción exacta de cada panel y te lo copia.</p>
-<p>Generas fuera, y luego en cada zona eliges <b>Imagen</b> y la subes. Ahí puedes
-moverla y ampliarla hasta que encaje.</p>`},
+  {t:"Dibujarlo aquí mismo", sel:".sec.ai", html:
+`<p>Hay un segundo botón, <b>Dibujarlo aquí mismo</b>, que pinta los cinco
+paneles de golpe sin salir de la herramienta. <b>Todavía no está conectado</b>:
+le falta la clave del generador de imágenes.</p>
+<p>Cuando lo esté, aparecerá solo, con un <b>candado por panel</b> para fijar los
+que ya te gusten y pedir otra versión de los demás.</p>`},
 
   {t:"Tres formas de verlo", sel:null, html:
 `<p><b>Maqueta</b> — las cuatro caras en foto real, para enseñárselo al cliente.</p>
@@ -1792,9 +1830,14 @@ use("downloads").then(d => { downloads = d; }).catch(() => {});
 
 use("sample").then(s => {
   sample = s;
+  if(!s){
+    // Sin generador no tiene sentido enseñar el botón: se quita y se dice
+    // cuál es el camino que sí funciona.
+    $("#gen").hidden = true; $("#again").hidden = true;
+  }
   renderVariants();
   if(!s){ $("#gen").disabled = true;
-          sayAI("<b>El generador automático todavía no está conectado.</b> Mientras tanto: dale a «Escribir prompt para GPT / Gemini», genera fuera, y sube cada imagen en su zona. Guardar la hoja de corte, el PNG y la ficha sí funcionan."); }
+          sayAI("<b>Dibujar aquí mismo todavía no está conectado.</b> El camino es: copiar el encargo, generarlo en GPT o Gemini, y subir cada imagen en su zona."); }
 }).catch(() => {});
 </script>
 

@@ -2351,31 +2351,20 @@ $("#save-png").addEventListener("click", async () => {
 });
 
 /* ══ LA PUERTA ═══════════════════════════════════════════════════════════
-   El taller entra por el mismo candado que el gestor: se pide la contraseña
-   de Jaime y se comprueba descifrando su admin/acceso.json. Si descifra, la
-   contraseña es buena. De ella sale la llave de la API — no la contraseña en
-   sí, que NUNCA sale de su navegador.                                       */
-const b2buf = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
-const hex = buf => Array.from(new Uint8Array(buf)).map(x => x.toString(16).padStart(2,"0")).join("");
+   Una sola contraseña en toda la casa: la del gestor. El servidor la
+   comprueba contra el propio acceso.json de Jaime y devuelve un vale
+   firmado. Aquí no se descifra nada: la contraseña se manda una vez y lo que
+   se guarda es el vale, no ella.                                            */
+const API_ENTRAR = API_DISENO ? API_DISENO.replace(/\/disenar\/?$/, "/entrar") : "";
 
-async function derivarAES(u, pw, salt, iter){
-  const raw = new TextEncoder().encode(u.toLowerCase().trim() + " " + pw);
-  const k = await crypto.subtle.importKey("raw", raw, "PBKDF2", false, ["deriveKey"]);
-  return crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:iter, hash:"SHA-256"},
-    k, {name:"AES-GCM", length:256}, false, ["decrypt"]);
-}
-// La llave que viaja a la API. Así el servidor nunca ve su contraseña.
-async function llaveApi(pw){
-  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("mesa-de-vinilo:" + pw));
-  return hex(d);
-}
-async function compruebaPass(u, pw){
-  const r = await fetch("../acceso.json", {cache:"no-store"});
-  if(!r.ok) throw new Error("sin-acceso");          // no hay candado: página suelta
-  const o = await r.json();
-  const k = await derivarAES(u, pw, b2buf(o.salt), o.iter || 310000);
-  await crypto.subtle.decrypt({name:"AES-GCM", iv:b2buf(o.iv)}, k, b2buf(o.data));
-  return true;                                       // si descifra, es la buena
+async function pideVale(usuario, pass){
+  const r = await fetch(API_ENTRAR, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({usuario, pass})
+  });
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error(j.error || ("El servidor respondió " + r.status));
+  return j.vale;
 }
 
 /* ══ LA BIBLIOTECA COMPARTIDA ════════════════════════════════════════════
@@ -2474,11 +2463,12 @@ function pasaAdentro(){
   else if(primeraVez){ remember(SEEN, "1"); setTimeout(openTour, 500); }
 }
 
-// Si hay candado, se pide la contraseña. Si no lo hay (copia local, artefacto),
-// se entra directamente: no tiene sentido pedir una llave que nadie puso.
+// Con candado a la vista se pide la contraseña. Sin él (copia local, artefacto)
+// se entra directo: no tiene sentido pedir una llave que nadie ha puesto.
 (async () => {
   const puerta = $("#puerta"), msg = $("#pt-msg");
   if(recall(LS_CLAVE)){ pasaAdentro(); return; }
+  if(!API_ENTRAR){ pasaAdentro(); return; }
   try{
     const r = await fetch("../acceso.json", {cache:"no-store"});
     if(!r.ok) throw 0;
@@ -2486,23 +2476,23 @@ function pasaAdentro(){
 
   puerta.hidden = false;
   setTimeout(() => $("#pt-pass").focus(), 120);
+  let yendo = false;
   const entrar = async () => {
+    if(yendo) return;
     const u = $("#pt-user").value.trim(), pw = $("#pt-pass").value;
     if(!pw) return;
+    yendo = true;
     msg.className = "msg"; msg.textContent = "Comprobando…";
     try{
-      await compruebaPass(u, pw);
-      remember(LS_CLAVE, await llaveApi(pw));
+      remember(LS_CLAVE, await pideVale(u, pw));
       remember("mdv-user", u);
       msg.className = "msg ok"; msg.textContent = "Adentro.";
       pasaAdentro();
       arrancaBiblioteca();
     }catch(e){
       msg.className = "msg bad";
-      msg.textContent = String(e && e.message) === "sin-acceso"
-        ? "No encuentro el candado del gestor."
-        : "Esa contraseña no es. Es la misma con la que abres tu gestor.";
-    }
+      msg.textContent = String((e && e.message) || "No se ha podido comprobar.");
+    }finally{ yendo = false; }
   };
   $("#pt-go").addEventListener("click", entrar);
   $("#pt-pass").addEventListener("keydown", e => { if(e.key === "Enter") entrar(); });

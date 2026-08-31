@@ -1392,13 +1392,18 @@ document.addEventListener("click", e => {
   if(t.dataset.variant !== undefined){
     state.designIdx = +t.dataset.variant;
     const d = state.designs[state.designIdx];
-    if(!d.panels && d.url){
+    // `url` es el formato viejo; los de ahora traen `base` + `zonas`. Preguntando
+    // solo por `url` no se bajaba nada y el diseño se aplicaba VACÍO: parecía que
+    // no se hubiera generado nunca.
+    if(!d.panels && (d.url || d.base)){
       sayAI("Trayendo el diseño de la biblioteca…");
-      traerPaneles(d).then(() => { applyDesign(d); renderAll(); renderVariants(); sayAI(""); })
-                     .catch(() => sayAI("No se ha podido traer ese diseño.","bad"));
+      traerPaneles(d).then(() => {
+        if(!d.panels) return sayAI("Ese diseño no se ha podido traer entero.","bad");
+        applyDesign(d); renderAll(); renderVariants(); avisaDeLasCaras(d);
+      }).catch(() => sayAI("No se ha podido traer ese diseño.","bad"));
       return;
     }
-    applyDesign(d); renderAll(); renderVariants();
+    applyDesign(d); renderAll(); renderVariants(); avisaDeLasCaras(d);
     if(d.modelo && d.modelo !== state.model){
       sayAI("Ese diseño se hizo para <b>" + (d.modelo === "grande" ? "el carro grande" : "el carro mediano")
           + "</b>. Se ha puesto igual, pero los paneles no miden lo mismo: revísalo antes de cortar.", "bad");
@@ -1655,6 +1660,19 @@ function applyDesign(d){
   return n;
 }
 
+/** Las caras que este diseño no trae. Se avisa antes de que lo descubra él. */
+function carasQueFaltan(d){
+  if(!d || !d.panels) return [];
+  return AI_ZONES.filter(z => !d.panels[z.id]).map(z => z.nombre);
+}
+function avisaDeLasCaras(d){
+  const f = carasQueFaltan(d);
+  if(!f.length) return;
+  sayAI(`A este diseño le faltan <b>${f.length}</b> de ${AI_ZONES.length} caras `
+      + `(${f.join(", ")}). Esas se quedan como estaban. `
+      + `Genera otra versión o rellénalas a mano desde su zona.`, "bad");
+}
+
 // Cómo está colocado AHORA cada panel. Es lo único que el diseño no traía:
 // el dibujo se guardaba al generarlo, pero el encuadre que él le daba después
 // se perdía en cuanto volvía a tocar la biblioteca.
@@ -1707,12 +1725,17 @@ function renderVariants(){
       ? new Date(d.fecha).toLocaleDateString("es-ES", {day:"2-digit", month:"short"})
       : "";
     const otro = d.modelo && d.modelo !== state.model;
+    // Un diseño al que le faltan caras se veía igual que uno entero, y solo se
+    // notaba al ponerlo. Que lo diga la tarjeta.
+    const caras = cuantasCaras(d);
+    const manco = caras > 0 && caras < AI_ZONES.length;
     const sello = d.modelo === "grande" ? "Grande" : d.modelo === "half" ? "Mediano" : "";
     return `<div class="vcard">
       <button class="variant${otro ? " ajeno" : ""}" data-variant="${i}" aria-pressed="${i===state.designIdx}"
               title="${esc(d.name)}${otro ? " — hecho para el otro modelo" : ""}">${th}
         <span class="vname">${esc(d.name)}</span>
-        <span class="vdate">${cuando}${sello ? " · " + sello : ""}</span>
+        <span class="vdate">${cuando}${sello ? " · " + sello : ""}${
+          manco ? ` · <b style="color:var(--rbf)">faltan ${AI_ZONES.length - caras}</b>` : ""}</span>
       </button>
       <button class="vdel" data-borrar="${i}" title="Tirar esta versión"
               aria-label="Tirar ${esc(d.name)}">×</button>

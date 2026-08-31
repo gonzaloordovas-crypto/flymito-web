@@ -2911,7 +2911,11 @@ function pendientesDeSubir(){
 // se les hace la miniatura y se les pega — solo la ficha, sin resubir megas.
 async function arreglaMiniaturas(){
   if(!bibViva) return;
-  const rotos = state.designs.filter(d => d && d.id && !d.thumb && idsArriba.has(d.id));
+  // Falta, o es un pegote de color. Un JPEG de 150 px con dibujo de verdad no
+  // baja de ~1,5 KB; por debajo de eso es un bloque plano y no se distingue
+  // nada — que es lo mismo que no tener miniatura, pero peor porque engaña.
+  const flojo = t => !t || t.length < 2000;
+  const rotos = state.designs.filter(d => d && d.id && flojo(d.thumb) && idsArriba.has(d.id));
   if(!rotos.length) return;
   let n = 0;
   for(const d of rotos){
@@ -2919,7 +2923,7 @@ async function arreglaMiniaturas(){
       await traerPaneles(d);
       const pri = d.panels && (d.panels["lat-izq"] || d.panels["frente-inf"] || d.panels["trasera"]);
       const th = await miniaturaDe(pri);
-      if(!th) continue;
+      if(!th || (flojo(th) && !flojo(d.thumb))) continue;   // no cambiar bueno por peor
       d.thumb = th;
       await bib("POST", {diseno: {id: d.id, thumb: th}, soloFicha: true});
       n++;

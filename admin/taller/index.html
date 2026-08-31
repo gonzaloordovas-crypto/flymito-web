@@ -1,15 +1,3 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="color-scheme" content="light dark">
-<meta name="robots" content="noindex, nofollow">
-<title>Mesa de Vinilo · Flymito</title>
-<link rel="icon" href="../../favicon-32.png">
-<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
-</head>
-<body>
 <title>Mesa de Vinilo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -484,12 +472,6 @@ p.paso .np{
 .tbtn:hover{border-color:var(--focus)}
 .tbtn.pri{background:var(--focus);border-color:var(--focus);color:var(--panel)}
 .tbtn[disabled]{opacity:.35;cursor:not-allowed}
-.backlink{
-  font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--ink-3);text-decoration:none;white-space:nowrap;
-}
-.backlink:hover{color:var(--focus)}
-@media print{.backlink{display:none}}
 .helpbtn{
   cursor:pointer;background:none;border:1px solid var(--rule-2);border-radius:99px;
   width:24px;height:24px;display:grid;place-items:center;color:var(--ink-3);
@@ -730,7 +712,6 @@ p.paso .np{
     <button data-model="half" aria-pressed="true">Carro mediano</button>
     <button data-model="grande" aria-pressed="false">Carro grande</button>
   </div>
-  <a class="backlink" href="../">← Gestor</a>
   <button class="helpbtn" id="help" title="Cómo funciona" aria-label="Cómo funciona">?</button>
   <div class="readout mono">
     <div>Modelo<b id="ro-model">—</b></div>
@@ -795,10 +776,10 @@ p.paso .np{
     </section>
 
     <section class="sec" id="sec-cierre">
-      <h2>Cierre frontal</h2>
+      <h2>Cómo vinilas el frontal</h2>
       <div class="seg" role="group" aria-label="Tratamiento del cierre">
-        <button data-latch="recortado" aria-pressed="true">Recortado</button>
-        <button data-latch="desmontado" aria-pressed="false">Desmontado</button>
+        <button data-latch="recortado" aria-pressed="true">Sin tocar el cierre</button>
+        <button data-latch="desmontado" aria-pressed="false">Desatornillando</button>
       </div>
       <p class="hint" id="hint-latch"></p>
     </section>
@@ -978,6 +959,26 @@ function zoneList(){
 function zoneFor(z){
   if(state.model === "grande") return z;
   return state.latch === "desmontado" && z.startsWith("frente") ? "frente" : z;
+}
+// Cambiar de modo de cierre es la MISMA idea vinilada de otra forma, así que
+// el dibujo del frontal viaja con él. Si no, al cambiar se quedaba en blanco y
+// parecía que se había borrado.
+function pasaElFrontal(nuevo){
+  if(state.model === "grande" || nuevo === state.latch) return;
+  const copia = (de, a) => {
+    const o = state.zones[de], d = state.zones[a];
+    ["type","color","color2","stripes","sw","dir","img","fit","zoom","ox","oy","svg","vb"]
+      .forEach(k => { d[k] = o[k]; });
+  };
+  const pintado = z => !!(z.img || z.svg || z.type !== "dampla");
+  if(nuevo === "desmontado"){
+    // Manda el panel grande; solo cede si está sin tocar y el de arriba no.
+    const inf = state.zones["frente-inf"];
+    copia(!pintado(inf) && pintado(state.zones["frente-sup"]) ? "frente-sup" : "frente-inf", "frente");
+  }else{
+    copia("frente", "frente-sup");
+    copia("frente", "frente-inf");
+  }
 }
 
 /* ══ ACABADOS EN SVG ══════════════════════════════════════════════════════ */
@@ -1297,8 +1298,11 @@ function renderReadout(){
       + "<br>⚠︎ El frontal sale de <b>245 × 754</b> según las planchas. Si es un carro entero tumbado deberían ser 974 de alto: <b>medirlo antes de cortar</b>.";
   $("#sec-cierre").hidden = state.model === "grande";
   $("#hint-latch").innerHTML = state.latch === "recortado"
-    ? "El frontal va en <b>dos piezas</b> y la franja del cierre se queda con su acabado original. Es como está el del Atlético."
-    : "Se desmonta el herraje y el frontal va <b>de una pieza</b>: mira cómo el dibujo cruza la franja sin cortarse. Es como está el Gulf.";
+    ? "El vinilo se corta en <b>dos piezas</b>, una encima y otra debajo de la franja del cierre, "
+      + "que se queda como está. Es lo rápido, y el dibujo queda partido en dos."
+    : "Se desatornilla el herraje, el frontal va <b>de una pieza</b> y el dibujo cruza la franja "
+      + "sin cortarse. Luego el cierre se vuelve a atornillar encima. Más faena, mejor acabado."
+      + "<br>En la hoja de corte esto cambia: <b>una pieza en vez de dos</b>.";
 }
 
 function syncInputs(){
@@ -1334,7 +1338,7 @@ document.addEventListener("click", e => {
     renderAll(); return;
   }
   if(t.dataset.piel){ state.piel = t.dataset.piel; renderAll(); return; }
-  if(t.dataset.latch){ state.latch = t.dataset.latch; state.open = null; renderAll(); return; }
+  if(t.dataset.latch){ pasaElFrontal(t.dataset.latch); state.latch = t.dataset.latch; state.open = null; renderAll(); return; }
   if(t.dataset.idea !== undefined){
     const idea = IDEAS[+t.dataset.idea];
     $("#brief").value = idea.t;
@@ -2543,6 +2547,9 @@ const STEPS = [
 y el frontal, que va partido en dos porque en medio está la franja del cierre.</p>
 <p>El marco de aluminio, las bisagras, el cierre, el asa, las ruedas y los pedales
 <b>no se pintan nunca</b>.</p>
+<p>Y el frontal tiene truco: la franja del cierre lo cruza por el medio. O
+vinilas <b>en dos piezas</b> respetándola, o <b>desatornillas</b> el herraje y lo
+haces de una. Eso se elige en <b>Cómo vinilas el frontal</b>.</p>
 <div class="keyline">Aquí eso no es un aviso: el herraje se dibuja por encima del
 diseño, así que es imposible taparlo sin querer.</div>`},
 
@@ -2758,6 +2765,3 @@ use("sample").then(s => {
   }
 }).catch(() => {});
 </script>
-
-</body>
-</html>

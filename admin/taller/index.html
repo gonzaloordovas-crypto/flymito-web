@@ -130,15 +130,16 @@ button,input,select,textarea{font:inherit;color:inherit}
 .stage.cut svg{width:100%;max-width:660px;height:auto;display:block}
 
 /* ── LAS CUATRO VISTAS ────────────────────────────────────────────────── */
-.views{display:flex;gap:clamp(6px,1.4vw,22px);align-items:flex-end;justify-content:center;width:100%;min-width:0}
+.views{display:flex;gap:clamp(6px,1.4vw,22px);align-items:flex-end;justify-content:center;
+  width:100%;max-width:1100px;min-width:0;margin:0 auto}
 .view{margin:0;display:flex;flex-direction:column;align-items:center;gap:9px;
-  flex:1 1 0;min-width:0;max-width:300px}
+  flex:1 1 0;min-width:0}
 @media (max-width:720px){
   .views{overflow-x:auto;justify-content:flex-start;padding-bottom:6px;
     scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
-  .view{flex:0 0 auto;width:44%;max-width:none;scroll-snap-align:center}
+  .view{flex:0 0 auto!important;width:calc(var(--rel,1) * 30%);max-width:none;scroll-snap-align:center}
 }
-@media (max-width:420px){.view{width:66%}}
+@media (max-width:420px){.view{width:calc(var(--rel,1) * 46%)}}
 .plate{position:relative;width:100%}
 .plate img.metal{position:absolute;inset:0;width:100%;height:100%;display:block}
 .hole{position:absolute;overflow:hidden;background:#B9C0BE;cursor:pointer}
@@ -469,6 +470,38 @@ p.paso .np{
 .sec.spot{animation:spot 1.5s ease-in-out 2}
 
 /* ── FICHA DE PEDIDO ───────────────────────────────────────────────────── */
+#vuelo{
+  position:fixed;inset:0;z-index:88;background:rgba(6,10,12,.78);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+#vuelo[hidden]{display:none!important}
+.vuelocard{
+  width:min(460px,100%);background:#0C1114;color:#E4EAE6;border-radius:6px;
+  border:1px solid rgba(232,163,61,.34);
+  box-shadow:0 40px 100px -40px rgba(0,0,0,.9);
+  animation:passin .5s cubic-bezier(.2,.8,.25,1) both;
+}
+.vhead{padding:15px 22px 0}
+.vfno{font-family:'IBM Plex Mono',monospace;font-size:9.5px;letter-spacing:.22em;color:#E8A33D}
+.vbody{padding:16px 22px 20px}
+.vmsg{
+  font-family:'IBM Plex Mono',monospace;font-size:clamp(13px,3.4vw,17px);font-weight:600;
+  letter-spacing:.1em;color:#E4EAE6;min-height:2.6em;display:flex;align-items:center;
+}
+.vmsg span{display:inline-block;animation:asoma .5s ease both}
+.vbar{height:3px;background:rgba(228,234,230,.14);border-radius:99px;overflow:hidden;margin:14px 0 12px}
+.vbar i{
+  display:block;height:100%;width:36%;border-radius:99px;background:#E8A33D;
+  animation:rueda 1.5s ease-in-out infinite;
+}
+@keyframes rueda{0%{transform:translateX(-100%)}100%{transform:translateX(320%)}}
+.vsub{margin:0;font-size:12.5px;line-height:1.5;color:#8A948F}
+.vsub.mal{color:#FF8A73}
+.vfoot{display:flex;gap:8px;justify-content:flex-end;padding:0 22px 20px}
+.vfoot .tbtn{background:#151C1F;border-color:rgba(228,234,230,.22);color:#E4EAE6}
+.vfoot .tbtn.pri{background:#E8A33D;border-color:#E8A33D;color:#0C1114}
+@media (prefers-reduced-motion:reduce){.vbar i{animation:none;width:100%}.vmsg span{animation:none}}
+
 #ficha{
   position:fixed;inset:0;z-index:85;background:rgba(8,12,14,.62);
   display:flex;align-items:center;justify-content:center;padding:24px;
@@ -592,6 +625,21 @@ p.paso .np{
       <span class="dots2" id="tour-d"></span>
       <button class="tbtn" id="tour-prev">Atrás</button>
       <button class="tbtn pri" id="tour-next">Siguiente</button>
+    </div>
+  </div>
+</div>
+
+<div id="vuelo" hidden>
+  <div class="vuelocard" role="dialog" aria-modal="true" aria-live="polite">
+    <div class="vhead"><span class="vfno">VUELO FM · GENERANDO</span></div>
+    <div class="vbody">
+      <div class="vmsg" id="vmsg">Solicitando permiso a la torre</div>
+      <div class="vbar"><i></i></div>
+      <p class="vsub" id="vsub">Cinco paneles, uno por cara. Suele tardar menos de un minuto.</p>
+    </div>
+    <div class="vfoot">
+      <button class="tbtn" id="v-cancel">Cancelar</button>
+      <button class="tbtn pri" id="v-ver" hidden>Ver el diseño</button>
     </div>
   </div>
 </div>
@@ -971,7 +1019,12 @@ function renderMock(){
   const pct = (v, tot) => (v/tot*100).toFixed(4) + "%";
 
   const VS = vistas();
-  return `<div class="views">` + VS.map(v => {
+  // Cuánto ancho de plancha corresponde a una unidad de alto de bastidor.
+  // Repartiendo el ancho en esa proporción, las cuatro caras salen a la misma
+  // altura, que es lo que pasa en el carro de verdad.
+  const rels = VS.map(v => { const m = marcoPx(v); return m.h > 0 ? v.pw / m.h : 1; });
+  return `<div class="views">` + VS.map((v, iv) => {
+    const rel = rels[iv];
     // Con el cierre desmontado, los dos huecos del frontal son ventanas a un
     // único lienzo continuo: por eso el dibujo cruza la franja sin cortarse.
     let span = null;
@@ -993,7 +1046,7 @@ function renderMock(){
            + `width:${pct(hole.w,v.pw)};height:${pct(hole.h,v.ph)}">`
            + `<div class="art" style="${off}">${art}</div></div>`;
     }).join("");
-    return `<figure class="view">
+    return `<figure class="view" style="flex:${rel} 1 0;--rel:${rel.toFixed(3)}">
         <div class="plate" style="aspect-ratio:${v.pw}/${v.ph}">${holes}<img class="metal" src="${v.img}" alt="Trolley · ${v.label}"></div>
         <figcaption>${v.label}</figcaption>
       </figure>`;
@@ -1374,16 +1427,44 @@ const VUELO = [
 let vueloN = 0, vueloTic = 0;
 function despega(){
   vueloN = 0;
+  const msg = $("#vmsg");
+  $("#vuelo").hidden = false;
+  $("#v-ver").hidden = true;
+  $("#v-cancel").hidden = false;
+  $("#v-cancel").textContent = "Cancelar";
+  $("#vsub").className = "vsub";
+  $("#vsub").textContent = "Cinco paneles, uno por cara. Suele tardar menos de un minuto.";
   const poner = () => {
     // Al final del vuelo se queda dando vueltas por el crucero.
     const i = vueloN < VUELO.length ? vueloN : 9 + (vueloN % 7);
-    sayAI(`<span class="vuelo">${VUELO[i]}<span class="dots"></span></span>`);
+    msg.innerHTML = `<span>${VUELO[i]}<span class="dots"></span></span>`;
     vueloN++;
   };
   poner();
   vueloTic = setInterval(poner, 2800);
 }
 function aterriza(){ if(vueloTic){ clearInterval(vueloTic); vueloTic = 0; } }
+function cierraVuelo(){ aterriza(); $("#vuelo").hidden = true; }
+// El vuelo llega y se ofrece verlo, en vez de cerrarse solo.
+function llegada(texto){
+  aterriza();
+  $("#vmsg").innerHTML = "<span>Bienvenidos a destino</span>";
+  $("#vsub").className = "vsub"; $("#vsub").textContent = texto;
+  $("#v-cancel").hidden = true;
+  $("#v-ver").hidden = false; $("#v-ver").focus();
+}
+function averia(texto){
+  aterriza();
+  $("#vmsg").innerHTML = "<span>Vuelo cancelado</span>";
+  $("#vsub").className = "vsub mal"; $("#vsub").textContent = texto;
+  $("#v-cancel").textContent = "Cerrar"; $("#v-cancel").hidden = false;
+  $("#v-ver").hidden = true;
+}
+$("#v-ver").addEventListener("click", cierraVuelo);
+$("#v-cancel").addEventListener("click", () => {
+  if(running){ running.abort(); running = null; }
+  cierraVuelo();
+});
 
 let sample = null, downloads = null, running = null;
 const aimsg = $("#aimsg"), msg = $("#msg");
@@ -1613,15 +1694,16 @@ Reglas del SVG, sin excepción:
     state.designIdx = state.designs.length - 1;
     const n = applyDesign(state.designs[state.designIdx]);
     renderAll();
-    aterriza();
-    sayAI(`<b>${esc(state.designName)}</b> · ${n} paneles puestos`
-        + (locked ? ` · ${locked} con candado, sin tocar` : "")
-        + (got < AI_ZONES.length ? ` (${AI_ZONES.length-got} no salieron)` : "")
-        + `. Dale a «Otra versión» para tener alternativas, y pon el candado a los paneles que ya te gusten.`, "ok");
+    llegada(`${state.designName} · ${n} paneles`
+        + (locked ? `, ${locked} con candado sin tocar` : "")
+        + (got < AI_ZONES.length ? `, ${AI_ZONES.length-got} no salieron` : "")
+        + ". Ya está puesto en el carro.");
+    sayAI(`<b>${esc(state.designName)}</b> · ${n} paneles puestos. Dale a «Otra versión» `
+        + `para tener alternativas, y pon el candado a los que ya te gusten.`, "ok");
   }catch(err){
-    aterriza();
     const c = err && err.code;
-    if(c === "cancelled") return;
+    if(c === "cancelled"){ aterriza(); return; }
+    averia(String((err && err.message) || "No ha salido un diseño válido. Prueba a describirlo con más detalle."));
     if(c === "not_granted")      sayAI("No hay permiso para usar el generador en esta ventana.","bad");
     else if(c === "rate_limited")sayAI("Demasiadas peticiones seguidas. Espera un momento y vuelve a darle.","bad");
     else if(c === "clave")       sayAI("Esa clave no es. Vuelve a escribirla.","bad");

@@ -1609,26 +1609,86 @@ function texCepillado(){
 }
 
 function envCubo(){
-  const caras = [];
-  for(let i = 0; i < 6; i++){
-    const c = document.createElement("canvas"); c.width = c.height = 128;
+  // Un plató, no un degradado. El metal solo parece metal si tiene algo que
+  // reflejar: aquí hay cielo, horizonte, suelo y cuatro ventanas de luz.
+  const N = 256;
+  const cara = (tipo) => {
+    const c = document.createElement("canvas"); c.width = c.height = N;
     const x = c.getContext("2d");
-    if(i === 2){ x.fillStyle = "#F2F6F7"; }
-    else if(i === 3){ x.fillStyle = "#23292B"; }
-    else {
-      const g = x.createLinearGradient(0, 0, 0, 128);
-      g.addColorStop(0, "#EAF0F2"); g.addColorStop(.5, "#98A3A7"); g.addColorStop(1, "#3A4245");
-      x.fillStyle = g;
+
+    if(tipo === "arriba"){
+      const g = x.createRadialGradient(N/2, N/2, 10, N/2, N/2, N*0.72);
+      g.addColorStop(0, "#FFFFFF"); g.addColorStop(.45, "#EAF1F4"); g.addColorStop(1, "#B9C6CB");
+      x.fillStyle = g; x.fillRect(0, 0, N, N);
+      // rejilla de techo: da reflejos que cambian al girar
+      x.strokeStyle = "rgba(150,168,175,.55)"; x.lineWidth = 3;
+      for(let k = 32; k < N; k += 42){
+        x.beginPath(); x.moveTo(k, 0); x.lineTo(k, N); x.stroke();
+        x.beginPath(); x.moveTo(0, k); x.lineTo(N, k); x.stroke();
+      }
+      return c;
     }
-    x.fillRect(0, 0, 128, 128);
-    if(i !== 2 && i !== 3){
-      x.fillStyle = "rgba(255,255,255,.92)"; x.fillRect(0, 16, 128, 24);
-      x.fillStyle = "rgba(255,255,255,.35)"; x.fillRect(0, 52, 128, 8);
+    if(tipo === "abajo"){
+      const g = x.createRadialGradient(N/2, N/2, 8, N/2, N/2, N*0.8);
+      g.addColorStop(0, "#4A5458"); g.addColorStop(1, "#1C2123");
+      x.fillStyle = g; x.fillRect(0, 0, N, N);
+      return c;
     }
-    caras.push(c);
+    // paredes: cielo arriba, horizonte a media altura, suelo abajo
+    const g = x.createLinearGradient(0, 0, 0, N);
+    g.addColorStop(0,   "#F4F9FB");
+    g.addColorStop(.34, "#D2DEE3");
+    g.addColorStop(.50, "#93A3AA");
+    g.addColorStop(.52, "#6E7C82");
+    g.addColorStop(1,   "#242A2C");
+    x.fillStyle = g; x.fillRect(0, 0, N, N);
+
+    // ventanas de luz: son las que dibujan los brillos alargados del aluminio
+    const focos = {
+      frente:  [[26, 34, 84, 96], [150, 52, 66, 58]],
+      espalda: [[70, 40, 120, 52]],
+      izq:     [[40, 30, 60, 130]],
+      der:     [[120, 44, 92, 70], [24, 150, 54, 30]]
+    }[tipo] || [];
+    focos.forEach(([fx, fy, fw, fh]) => {
+      const gg = x.createLinearGradient(fx, fy, fx, fy + fh);
+      gg.addColorStop(0, "rgba(255,255,255,.98)");
+      gg.addColorStop(1, "rgba(255,255,255,.72)");
+      x.fillStyle = gg; x.fillRect(fx, fy, fw, fh);
+      // halo, para que el reflejo no acabe en un canto duro
+      x.fillStyle = "rgba(255,255,255,.16)";
+      x.fillRect(fx - 10, fy - 10, fw + 20, fh + 20);
+    });
+    // franja de zócalo: el reflejo oscuro de la parte baja
+    x.fillStyle = "rgba(20,26,28,.30)";
+    x.fillRect(0, N*0.62, N, N*0.10);
+    return c;
+  };
+
+  // orden del cubo: +X, -X, +Y, -Y, +Z, -Z
+  const t = new THREE.CubeTexture([
+    cara("der"), cara("izq"), cara("arriba"), cara("abajo"), cara("frente"), cara("espalda")
+  ]);
+  t.encoding = THREE.sRGBEncoding;
+  t.needsUpdate = true;
+  return t;
+}
+
+// Rugosidad irregular: sin esto el metal refleja como un espejo perfecto,
+// que es justo lo que delata a un render.
+function texRugosidad(){
+  const N = 256;
+  const c = document.createElement("canvas"); c.width = c.height = N;
+  const x = c.getContext("2d");
+  x.fillStyle = "#7A7A7A"; x.fillRect(0, 0, N, N);
+  for(let i = 0; i < 2600; i++){
+    const v = 90 + Math.random() * 90;
+    x.fillStyle = `rgba(${v},${v},${v},.5)`;
+    x.fillRect(Math.random()*N, Math.random()*N, 1 + Math.random()*3, 1 + Math.random()*22);
   }
-  const t = new THREE.CubeTexture(caras);
-  t.encoding = THREE.sRGBEncoding; t.needsUpdate = true;
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(4, 4);
   return t;
 }
 
@@ -1654,16 +1714,17 @@ async function mount3D(){
   ren.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
   ren.setSize(vw, vh, false);
   ren.outputEncoding = THREE.sRGBEncoding;
+  ren.toneMapping = THREE.ACESFilmicToneMapping;
+  ren.toneMappingExposure = 1.15;
   G.ren = ren;
 
   const scene = new THREE.Scene(); G.scene = scene;
   scene.environment = envCubo();          // lo que refleja el aluminio
   const cam = new THREE.PerspectiveCamera(34, vw/vh, .05, 60); G.cam = cam;
   // Sin sombras proyectadas: ensuciaban las caras. La forma la da el entorno.
-  scene.add(new THREE.HemisphereLight(0xEDF2F4, 0x39423F, 1.05));
-  const l1 = new THREE.DirectionalLight(0xffffff, 1.05); l1.position.set(1.9, 3.2, 2.4); scene.add(l1);
-  const l2 = new THREE.DirectionalLight(0xDCE8EC, .55);  l2.position.set(-2.6, 1.4, -1.8); scene.add(l2);
-  const l3 = new THREE.DirectionalLight(0xffffff, .34);  l3.position.set(0.5, -1.2, 2.4); scene.add(l3);
+  scene.add(new THREE.HemisphereLight(0xEDF2F4, 0x3C4542, .55));
+  const l1 = new THREE.DirectionalLight(0xffffff, .55); l1.position.set(1.9, 3.2, 2.4); scene.add(l1);
+  const l2 = new THREE.DirectionalLight(0xDCE8EC, .28); l2.position.set(-2.6, 1.4, -1.8); scene.add(l2);
 
   const d = state.dims, S = 0.001;
   const W = d.w*S, H = d.h*S, D = d.d*S, F = d.frame*S;
@@ -1671,13 +1732,16 @@ async function mount3D(){
   const iw = P.trasera.w*S, ih = P.trasera.h*S, idp = P["lat-izq"].w*S;
 
   const rig = new THREE.Group(); scene.add(rig);
-  const veta = texCepillado();
-  const alu    = new THREE.MeshStandardMaterial({color:0xC6CDCA, map:veta, metalness:.90, roughness:.34, envMapIntensity:1.10});
-  const perfil = new THREE.MeshStandardMaterial({color:0xD3D9D6, map:veta, metalness:.94, roughness:.22, envMapIntensity:1.40});
-  const steel  = new THREE.MeshStandardMaterial({color:0xC6CDCA, metalness:.90, roughness:.26, envMapIntensity:1.25});
-  const canto  = new THREE.MeshStandardMaterial({color:0x6E7775, metalness:.75, roughness:.42, envMapIntensity:.9});
-  const goma   = new THREE.MeshStandardMaterial({color:0x2B3032, metalness:.05, roughness:.92});
-  const dark   = new THREE.MeshStandardMaterial({color:0x33393B, metalness:.15, roughness:.75});
+  const veta = texCepillado(), rug = texRugosidad();
+  const alu    = new THREE.MeshStandardMaterial({color:0xBFC7C4, map:veta, roughnessMap:rug,
+                   metalness:1.0, roughness:.42, envMapIntensity:1.25});
+  const perfil = new THREE.MeshStandardMaterial({color:0xCED5D2, map:veta, roughnessMap:rug,
+                   metalness:1.0, roughness:.30, envMapIntensity:1.55});
+  const steel  = new THREE.MeshStandardMaterial({color:0xC2C9C6, roughnessMap:rug,
+                   metalness:1.0, roughness:.28, envMapIntensity:1.45});
+  const canto  = new THREE.MeshStandardMaterial({color:0x5F6866, metalness:.9, roughness:.50, envMapIntensity:1.0});
+  const goma   = new THREE.MeshStandardMaterial({color:0x212528, metalness:0, roughness:.78, envMapIntensity:.35});
+  const dark   = new THREE.MeshStandardMaterial({color:0x2E3436, metalness:.2, roughness:.7});
 
   // El cuerpo va METIDO: los perfiles del bastidor sobresalen, y por eso el
   // panel queda hundido como en el trolley real.
@@ -1706,6 +1770,7 @@ async function mount3D(){
   })));
 
   const EPS = 0.0018 - O;   // el cuerpo está metido O
+  const orla = new THREE.MeshBasicMaterial({color:0x1B2022, transparent:true, opacity:.5});
   const put = async (id, gw, gh, pos, rot) => {
     const q = P[id]; if(!q) return;
     const t = await texFromFinish(state.zones[id], q.w, q.h);
@@ -1714,7 +1779,11 @@ async function mount3D(){
       new THREE.MeshStandardMaterial({map:t, metalness:.04, roughness:.78, envMapIntensity:.35}));
     m.position.set(pos[0], pos[1], pos[2]);
     if(rot) m.rotation.set(rot[0], rot[1], rot[2]);
-    rig.add(m);
+    const o = new THREE.Mesh(new THREE.PlaneGeometry(gw + 0.009, gh + 0.009), orla);
+    o.position.set(pos[0], pos[1], pos[2]);
+    if(rot) o.rotation.set(rot[0], rot[1], rot[2]);
+    o.translateZ(-0.0016);
+    rig.add(o); rig.add(m);
   };
 
   const topY = H/2 - F;

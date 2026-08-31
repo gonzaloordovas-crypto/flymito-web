@@ -1858,7 +1858,10 @@ async function mount3D(){
     new THREE.MeshStandardMaterial({color:0x6B7472, metalness:.5, roughness:.6}));
   junta.position.set(0, topY - ih - 0.002, D/2 + 0.002); rig.add(junta);
 
-  // Herraje: asa, castores y pedales.
+  }
+
+  // Asa, castores y pedales: modelados SIEMPRE. La piel de foto va
+  // recortada al bastidor, así que no los duplica.
   const asaZ = D/2 - F - 0.030, asaY = H/2 + 0.046;
   const barra = new THREE.Mesh(new THREE.CylinderGeometry(0.0085, 0.0085, W - 2*F - 0.024, 14), steel);
   barra.rotation.z = Math.PI/2; barra.position.set(0, asaY, asaZ); rig.add(barra);
@@ -1902,7 +1905,6 @@ async function mount3D(){
       new THREE.MeshStandardMaterial({color:col, roughness:.55}));
     pd.position.set(sx*0.046, -H/2 - 0.010, D/2 + 0.014); rig.add(pd);
   });
-  }
 
   // ── Piel de foto: las cuatro planchas ortográficas sobre las caras ────
   if(state.piel === "foto"){
@@ -1923,17 +1925,17 @@ async function mount3D(){
       if(tok !== G.token) return;
       if(!tex) continue;
       const m = marcoPx(c.v);
-      const S2 = 0.001;
-      // La plancha entera, escalada para que su BASTIDOR case con la cara.
-      const pw = c.fw * (PLATE.w / m.w), ph = c.fh * (PLATE.h / m.h);
-      const dx = (PLATE.w/2 - (m.x + m.w/2)) * (c.fw / m.w);
-      const dy = ((m.y + m.h/2) - PLATE.h/2) * (c.fh / m.h);
-      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(pw, ph),
-        new THREE.MeshBasicMaterial({map:tex, transparent:true, alphaTest:0.35,
+      // Se recorta SOLO el bastidor: fuera ruedas y asa, que si no aparecen
+      // cuatro veces —una por plancha— y se ven ocho ruedas al girar.
+      tex.wrapS = tex.wrapT = THREE.ClampToEdgeWrapping;
+      tex.repeat.set(m.w / PLATE.w, m.h / PLATE.h);
+      tex.offset.set(m.x / PLATE.w, 1 - (m.y + m.h) / PLATE.h);
+      tex.needsUpdate = true;
+      const mesh = new THREE.Mesh(new THREE.PlaneGeometry(c.fw, c.fh),
+        new THREE.MeshBasicMaterial({map:tex, transparent:true, alphaTest:0.30,
                                      side:THREE.DoubleSide, toneMapped:false}));
       mesh.position.set(c.pos[0], c.pos[1], c.pos[2]);
       mesh.rotation.set(c.rot[0], c.rot[1], c.rot[2]);
-      mesh.translateX(dx); mesh.translateY(dy);
       rig.add(mesh);
     }
   }

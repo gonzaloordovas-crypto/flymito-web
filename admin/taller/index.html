@@ -1,3 +1,12 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<!-- Sin esto el movil renderiza a 980 px y encoge la pagina entera: se ve
+     todo diminuto. Como artefacto lo ponia la plataforma; suelto, no. -->
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="robots" content="noindex,nofollow">
 <title>Mesa de Vinilo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -585,6 +594,8 @@ p.paso .np{
   body.pr-ficha #printarea svg{width:100%;height:auto}
 }
 </style>
+</head>
+<body>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -2513,7 +2524,7 @@ const primeraVez = !recall(SEEN);
 
 function pasaAdentro(){
   $("#puerta").hidden = true;
-  if(primeraVez || esRegalo) gate.hidden = false;
+  if(primeraVez || esRegalo){ gate.hidden = false; arrancaTarjeta(); }
   else if(primeraVez){ remember(SEEN, "1"); setTimeout(openTour, 500); }
 }
 
@@ -2590,11 +2601,23 @@ function contarHasta(el, fin, ms){
     if(k < 1) requestAnimationFrame(paso);
   };
   requestAnimationFrame(paso);
+  // Red de seguridad: requestAnimationFrame no corre si la pestaña está de
+  // fondo. Sin esto, abrir el enlace y cambiar de app dejaba un 0 gigante en
+  // su tarjeta de cumpleaños. Pase lo que pase, acaba en el número.
+  setTimeout(() => { el.textContent = fin; }, ms + 400);
 }
-if(!gate.hidden){
+// Esto vivía suelto arriba, con un `if(!gate.hidden)`. Pero la tarjeta se
+// destapa DENTRO de la puerta, que es asíncrona: cuando llegaba aquí seguía
+// tapada y no arrancaba nada. La primera vez que entrase con su contraseña
+// —justo la vez que importa— habría visto un 0 enorme y el rótulo en blanco.
+let tarjetaEnMarcha = false;
+function arrancaTarjeta(){
+  if(tarjetaEnMarcha || gate.hidden) return;
+  tarjetaEnMarcha = true;
   splitFlap($("#board"), "FELIZ CUMPLEAÑOS");
   setTimeout(() => contarHasta($("#cincuenta"), 50, 1500), 620);
 }
+arrancaTarjeta();
 
 const STEPS = [
   {t:"Cinco paneles y un herraje", sel:null, html:
@@ -2820,3 +2843,6 @@ use("sample").then(s => {
   }
 }).catch(() => {});
 </script>
+
+</body>
+</html>

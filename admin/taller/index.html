@@ -393,7 +393,8 @@ p.paso .np{
   content:"";position:absolute;top:-11px;width:20px;height:20px;border-radius:99px;background:#05080A;
 }
 .perf::before{left:-11px}.perf::after{right:-11px}
-.pass .rows{display:grid;grid-template-columns:repeat(3,1fr);gap:0 12px;padding:18px 26px 0}
+.pass .rows{display:grid;grid-template-columns:1fr 1fr;gap:14px 12px;padding:18px 26px 0}
+.pass .rows .ancho{grid-column:1 / -1}
 .pass .rows .k{
   font-family:'IBM Plex Mono',monospace;font-size:8.5px;letter-spacing:.2em;
   text-transform:uppercase;color:#6E7874;margin-bottom:5px;
@@ -403,7 +404,7 @@ p.paso .np{
 .pass .msg2 p{margin:0 0 11px;font-size:14px;line-height:1.62;color:#A7B1AD}
 .pass .msg2 p b{color:#E4EAE6;font-weight:600}
 .pass .foot{
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
   padding:20px 26px 22px;margin-top:14px;border-top:1px solid rgba(228,234,230,.10);
 }
 .pass .from2{
@@ -589,8 +590,8 @@ p.paso .np{
     </div>
     <div class="perf"></div>
     <div class="rows">
-      <div><div class="k">Pasajero</div><div class="v">JAIME</div></div>
-      <div><div class="k">Fecha</div><div class="v">31 AGO 2026</div></div>
+      <div class="ancho"><div class="k">Pasajero</div><div class="v">JAIME ORDOVÁS MEDINA</div></div>
+      <div><div class="k">Fecha</div><div class="v">31 AGO 1976 → 31 AGO 2026</div></div>
       <div><div class="k">Puerta</div><div class="v">TALLER</div></div>
     </div>
     <div class="msg2">
@@ -605,10 +606,7 @@ p.paso .np{
     </div>
     <div class="foot">
       <span class="from2">Un regalo de Gonzalo</span>
-      <div class="gatebtns">
-        <button class="tbtn" id="gate-tour">Cómo funciona</button>
-        <button class="tbtn pri" id="gate-go">Embarcar</button>
-      </div>
+      <button class="tbtn pri" id="gate-go">Embarcar</button>
     </div>
   </div>
 </div>
@@ -715,11 +713,11 @@ p.paso .np{
         <button role="tab" id="tab-cut" aria-selected="false" data-view="cut">Hoja de corte</button>
       </div>
       <p class="hint" id="hint-model"></p>
-      <div class="seg" role="group" aria-label="Piel del 3D" style="margin-top:8px">
+      <div class="seg" id="segPiel" role="group" aria-label="Piel del 3D" style="margin-top:8px" hidden>
         <button data-piel="foto" aria-pressed="true">3D con tus fotos</button>
         <button data-piel="modelado" aria-pressed="false">3D calculado</button>
       </div>
-      <p class="hint" id="hint-piel"></p>
+      <p class="hint" id="hint-piel" hidden></p>
     </section>
 
     <section class="sec ai">
@@ -794,7 +792,6 @@ p.paso .np{
         <button class="act" id="save-svg"><span class="k">↓</span> Guardar hoja de corte (SVG)</button>
         <button class="act" id="save-png"><span class="k">↓</span> Guardar maqueta (PNG)</button>
         <button class="act" id="do-ficha"><span class="k">▤</span> Ficha de pedido</button>
-        <button class="act" id="do-print"><span class="k">⎙</span> Imprimir</button>
       </div>
       <p class="msg" id="msg"></p>
     </section>
@@ -1258,6 +1255,9 @@ function renderReadout(){
     : "<b>Carro grande</b> · 1030 × 810 × 301 mm, tumbado como mueble. El cierre cae en el frontal, que aquí no se parte."
       + "<br>⚠︎ El frontal sale de <b>245 × 754</b> según las planchas. Si es un carro entero tumbado deberían ser 974 de alto: <b>medirlo antes de cortar</b>.";
   $("#sec-cierre").hidden = state.model === "grande";
+  const en3D = state.view === "3d";
+  $("#segPiel").hidden = !en3D;
+  $("#hint-piel").hidden = !en3D;
   $("#hint-piel").innerHTML = state.piel === "foto"
     ? "El 3D se viste con <b>tus cuatro planchas</b>: metal, bisagras y tornillos son foto de verdad. Al girar mucho se nota que las caras son planas."
     : "El 3D se calcula entero. Aguanta cualquier ángulo, pero el metal nunca será una foto.";
@@ -2216,8 +2216,6 @@ async function mount3D(){
 const stampName = () => `${state.model}-${state.latch}`
   + (state.designName ? "-" + state.designName.toLowerCase().replace(/[^a-z0-9]+/g,"-") : "");
 
-$("#do-print").addEventListener("click", () => window.print());
-
 function descargaNormal(filename, data){
   const tipo = filename.endsWith(".svg") ? "image/svg+xml"
              : filename.endsWith(".png") ? "image/png" : "application/octet-stream";
@@ -2242,7 +2240,7 @@ async function offer(filename, data){
     }
   }
   try{ descargaNormal(filename, data); }
-  catch(e){ say("No se ha podido guardar. Prueba con Imprimir.","bad"); }
+  catch(e){ say("No se ha podido guardar el archivo.","bad"); }
 }
 
 $("#save-svg").addEventListener("click", () => { seq = 0; offer(`corte-trolley-${stampName()}.svg`, buildCut().svg); });
@@ -2288,7 +2286,7 @@ $("#save-png").addEventListener("click", async () => {
     }
     c.toBlob(b => b ? offer(`maqueta-trolley-${stampName()}.png`, b)
                     : say("No se ha podido generar el PNG.","bad"), "image/png");
-  }catch(e){ say("No se ha podido componer la maqueta. Prueba con Imprimir.","bad"); }
+  }catch(e){ say("No se ha podido componer la maqueta.","bad"); }
 });
 
 /* ══ EL CAJÓN · los diseños sobreviven a cerrar la pestaña ═══════════════ */
@@ -2336,7 +2334,6 @@ const primeraVez = !recall(SEEN);
 if(primeraVez || esRegalo) gate.hidden = false;
 function closeGate(){ gate.hidden = true; remember(SEEN, "1"); }
 $("#gate-go").addEventListener("click", closeGate);
-$("#gate-tour").addEventListener("click", () => { closeGate(); openTour(); });
 
 // Panel de salidas: las letras giran hasta cuadrar, como en un aeropuerto.
 const menosMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;

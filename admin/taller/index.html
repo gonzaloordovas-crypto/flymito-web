@@ -773,6 +773,7 @@ p.paso .np{
       <p class="hint" id="varHint" hidden>Todo lo que generas se queda aquí, aunque
         cierres. Toca uno para ponerlo. Para llevártelo fuera, <b>Guardar hoja de corte</b>.</p>
       <div class="variants" id="variants"></div>
+      <button class="act" id="guardarPos" hidden><span class="k">✓</span> Guardar cómo lo has colocado</button>
     </section>
 
     <section class="sec" id="sec-cierre">
@@ -1023,27 +1024,32 @@ function paint(fin, w, h){
     }
     case "imagen": {
       if(!fin.img) return `<rect width="${w}" height="${h}" fill="#4A5052"/>`;
-      // Zoom sobre el centro y desplazamiento: encajar la foto dentro del panel
-      // sin salir de la herramienta.
-      const z = Math.max(1, fin.zoom || 1);
-      const ex = w*(z-1), ey = h*(z-1);
-      const ox = -ex/2 + (fin.ox || 0) * ex/2;
-      const oy = -ey/2 + (fin.oy || 0) * ey/2;
+      const e = encuadre(fin, w, h);
       return `<rect width="${w}" height="${h}" fill="#15181A"/>`
-        + `<image href="${fin.img}" x="${ox}" y="${oy}" width="${w*z}" height="${h*z}" `
+        + `<image href="${fin.img}" x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" `
         + `preserveAspectRatio="xMidYMid ${fin.fit === "cover" ? "slice" : "meet"}"/>`;
     }
-    case "ia":
+    case "ia": {
       if(!fin.svg) return `<rect width="${w}" height="${h}" fill="#4A5052"/>`;
       // viewBox propio + "slice": si el modelo no clavó la proporción, se
       // recorta por los bordes. Deformar el dibujo nunca es una opción.
-      return `<svg x="0" y="0" width="${w}" height="${h}" viewBox="${fin.vb}" `
-        + `preserveAspectRatio="xMidYMid slice">${fin.svg}</svg>`;
+      const e = encuadre(fin, w, h);
+      return `<rect width="${w}" height="${h}" fill="#15181A"/>`
+        + `<svg x="${e.x}" y="${e.y}" width="${e.w}" height="${e.h}" viewBox="${fin.vb}" `
+        + `preserveAspectRatio="xMidYMid ${fin.fit === "contain" ? "meet" : "slice"}">${fin.svg}</svg>`;
+    }
   }
   return "";
 }
 // SVG suelto y autónomo con un acabado dentro. Se usa igual en la maqueta
 // (recortado por el hueco) y en la hoja de corte (a tamaño real).
+// Zoom desde el centro y desplazamiento. Lo usan por igual las fotos que sube
+// y los dibujos que genera la IA: encuadrar es lo mismo venga de donde venga.
+function encuadre(fin, w, h){
+  const z = Math.max(1, fin.zoom || 1);
+  const ex = w*(z-1), ey = h*(z-1);
+  return { x: -ex/2 + (fin.ox || 0)*ex/2, y: -ey/2 + (fin.oy || 0)*ey/2, w: w*z, h: h*z };
+}
 function finishSVG(fin, w, h, slice){
   const c = "c" + (++seq);
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" `
@@ -1219,8 +1225,13 @@ function renderZones(){
             + `<div class="seg" role="group" aria-label="Dirección"><button data-zd="${z.id}" data-v="v" aria-pressed="${f.dir==='v'}">Vertical</button><button data-zd="${z.id}" data-v="h" aria-pressed="${f.dir==='h'}">Horizontal</button></div>`;
     }
     if(f.type === "imagen"){
-      body += `<label class="file">${f.img ? "Cambiar imagen" : "Elegir imagen"}<input type="file" accept="image/*" data-zi="${z.id}"></label>`
-            + `<div class="seg" role="group" aria-label="Encaje"><button data-zf="${z.id}" data-v="cover" aria-pressed="${f.fit==='cover'}">Cubrir</button><button data-zf="${z.id}" data-v="contain" aria-pressed="${f.fit==='contain'}">Entera</button></div>`
+      body += `<label class="file">${f.img ? "Cambiar imagen" : "Elegir imagen"}<input type="file" accept="image/*" data-zi="${z.id}"></label>`;
+    }
+    // Encuadrar vale igual para una foto suya que para un dibujo de la IA: hasta
+    // ahora estos mandos solo salían con foto, y con un diseño generado no había
+    // forma de recolocarlo.
+    if(f.type === "imagen" || (f.type === "ia" && f.svg)){
+      body += `<div class="seg" role="group" aria-label="Encaje"><button data-zf="${z.id}" data-v="cover" aria-pressed="${f.fit==='cover'}">Cubrir</button><button data-zf="${z.id}" data-v="contain" aria-pressed="${f.fit==='contain'}">Entera</button></div>`
             + `<div class="row"><label>Zoom</label><input type="range" min="1" max="3" step="0.05" data-zr="${z.id}" data-k="zoom" value="${f.zoom}"><span class="val num">${(f.zoom*100).toFixed(0)} %</span></div>`
             + `<div class="row"><label>Mover ↔</label><input type="range" min="-1" max="1" step="0.02" data-zr="${z.id}" data-k="ox" value="${f.ox}"><span class="val num">${f.ox.toFixed(2)}</span></div>`
             + `<div class="row"><label>Mover ↕</label><input type="range" min="-1" max="1" step="0.02" data-zr="${z.id}" data-k="oy" value="${f.oy}"><span class="val num">${f.oy.toFixed(2)}</span></div>`;
@@ -1610,18 +1621,55 @@ function applyDesign(d){
     if(f.lock) return;
     const a = d.panels[z.id];
     if(!a) return;
-    if(a.img){ f.type = "imagen"; f.img = a.img; f.fit = "cover"; f.zoom = 1; f.ox = 0; f.oy = 0; }
+    // El encuadre guardado manda. Antes se volvía a 1/0/0 siempre: ajustabas la
+    // posición, tocabas el diseño en la biblioteca y se perdía sin avisar.
+    const e = a.pos || {};
+    if(a.img){ f.type = "imagen"; f.img = a.img; }
     else if(a.svg){ f.type = "ia"; f.svg = a.svg; f.vb = a.vb; }
     else return;
+    f.fit  = e.fit || "cover";
+    f.zoom = e.zoom || 1;
+    f.ox   = e.ox || 0;
+    f.oy   = e.oy || 0;
     n++;
   });
   const inf = state.zones["frente-inf"], uni = state.zones["frente"];
   if(!uni.lock){
-    if(inf.type === "imagen" && inf.img){ uni.type="imagen"; uni.img=inf.img; uni.fit=inf.fit; }
+    if(inf.type === "imagen" && inf.img){ uni.type="imagen"; uni.img=inf.img; }
     else if(inf.svg){ uni.type="ia"; uni.svg=inf.svg; uni.vb=inf.vb; }
+    uni.fit = inf.fit; uni.zoom = inf.zoom; uni.ox = inf.ox; uni.oy = inf.oy;
   }
   state.designName = d.name;
   return n;
+}
+
+// Cómo está colocado AHORA cada panel. Es lo único que el diseño no traía:
+// el dibujo se guardaba al generarlo, pero el encuadre que él le daba después
+// se perdía en cuanto volvía a tocar la biblioteca.
+function encuadreActual(id){
+  const f = state.zones[id];
+  return {fit: f.fit, zoom: f.zoom, ox: f.ox, oy: f.oy};
+}
+async function guardarEncuadre(){
+  const d = state.designs[state.designIdx];
+  if(!d || !d.panels) return;
+  Object.keys(d.panels).forEach(id => {
+    if(state.zones[id]) d.panels[id].pos = encuadreActual(id);
+  });
+  d.fecha = Date.now();
+  guardarDisenos();                       // el cajón local, siempre
+  const b = $("#guardarPos");
+  b.disabled = true;
+  try{
+    if(API_BIBLIO && claveGuardada()){
+      await bib("POST", {diseno: Object.assign({}, d, {thumb: d.thumb})});
+      sayAI("<b>Guardado.</b> Así es como lo verás también en el móvil.", "ok");
+    }else{
+      sayAI("<b>Guardado</b> en este aparato.", "ok");
+    }
+  }catch(_){
+    sayAI("Guardado aquí, pero <b>no ha subido</b> a la biblioteca. Inténtalo otra vez.", "bad");
+  }finally{ b.disabled = false; }
 }
 
 function renderVariants(){
@@ -1629,6 +1677,7 @@ function renderVariants(){
   $("#pasoVar").hidden = !state.designs.length;
   $("#varHint").hidden = !state.designs.length;
   $("#descartar").hidden = state.designIdx < 0;
+  $("#guardarPos").hidden = state.designIdx < 0;
   // Lo último arriba: es lo que se busca.
   box.innerHTML = state.designs.map((d,i) => ({d, i})).reverse().map(({d, i}) => {
     const a = d.panels && (d.panels["lat-izq"] || d.panels["frente-inf"] || d.panels["trasera"]);
@@ -1781,6 +1830,7 @@ $("#prompt-reset").addEventListener("click", () => { promptTocado = false; pinta
 $("#brief").addEventListener("input", () => { if(!promptTocado) pintarPrompt(); });
 
 // Descartar = volver a la versión anterior, o al aluminio si no había ninguna.
+$("#guardarPos").addEventListener("click", guardarEncuadre);
 $("#descartar").addEventListener("click", () => {
   if(state.designIdx < 0) return;
   state.designs.splice(state.designIdx, 1);

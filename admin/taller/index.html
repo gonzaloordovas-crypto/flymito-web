@@ -2999,8 +2999,12 @@ function arrancaBiblioteca(){
     // Lo que solo esté en este aparato sube solo. Que guardar y compartir sean
     // dos gestos distintos era pedirle al usuario que se acordara de algo que
     // el programa ya sabe.
-    if(pendientesDeSubir().length) setTimeout(subirLosMios, 800);
-    setTimeout(arreglaMiniaturas, 300);
+    // EN ORDEN, nunca a la vez: las dos reescriben el índice del servidor, y
+    // solapadas una guardaba una copia leída antes que la otra.
+    Promise.resolve()
+      .then(() => pendientesDeSubir().length ? subirLosMios() : null)
+      .then(arreglaMiniaturas)
+      .catch(() => {});
   }).catch(() => {});
 }
 arrancaBiblioteca();
